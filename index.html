@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<!-- Money app v2.1 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
+<!-- Money app v2.2 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Money</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -40,7 +40,7 @@
 --i-segon:#636366;color-scheme:dark}}
 :root[data-look=light]{color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;max-width:100%;overflow-x:hidden;background:var(--i-bg);color:var(--i-label);
+html,body{touch-action:manipulation;margin:0;width:100%;max-width:100%;overflow-x:hidden;background:var(--i-bg);color:var(--i-label);
   font:17px/1.3 var(--i-font);-webkit-text-size-adjust:100%;text-size-adjust:100%}
 button{font:inherit;color:inherit}
 .sbar{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--i-bar);
@@ -107,6 +107,10 @@ main{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) calc(64
 .look{display:flex;gap:2px;background:var(--i-fill);border-radius:9px;padding:2px;margin:0}
 .look button{flex:1;border:0;background:none;border-radius:7px;padding:7px 0;font-size:13px;font-weight:600;cursor:pointer}
 .look button[aria-pressed=true]{background:var(--i-segon);box-shadow:0 3px 8px rgba(0,0,0,.12)}
+
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:rgba(30,30,32,.92);color:#fff;font-size:14px;padding:10px 16px;border-radius:12px;max-width:90vw;transition:.25s;z-index:60}
+.toast.on{opacity:1;transform:translate(-50%,0)}
 
 </style>
 </head>
@@ -731,7 +735,7 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 </div></template>
 <script>
 "use strict";
-const APP_VERSION="2.1";
+const APP_VERSION="2.2";
 /* Each engine sees only its own compartment when it looks up parts of the page. */
 function mount(id){
   const host=document.getElementById(id), root=host.attachShadow({mode:"open"});
@@ -1167,7 +1171,8 @@ if(!Object.keys(S.fy).length)setTimeout(openSetup,60);
 
 ;return {get S(){return S},showTab:t=>showTab(t),run:()=>{try{run()}catch(e){}},calc:a=>calc(a),args:()=>args(),
  save:()=>save(),f3:x=>f3(x),el:id=>$(id),renderFxList:()=>{try{renderFxList();renderTotals()}catch(e){}},
- restoreFromText:t=>restoreFromText(t)};
+ restoreFromText:t=>restoreFromText(t),makeBackup:()=>makeBackup(),
+ markBackedUp:()=>{S.lastBackup=Date.now();save();try{updBanner()}catch(e){}}};
 })(PAYM.doc); }catch(e){ console.error("Shift Pay failed to start",e); }
 </script>
 <script>
@@ -1176,8 +1181,9 @@ try{ EXP=(function(document){ let __api=null;
 (function(){
 "use strict";
 const CUR="KWD";
-const APP_VERSION="3.6", APP_DATE="25 Nov 2026";
+const APP_VERSION="3.7", APP_DATE="25 Nov 2026";
 const CHANGELOG=[
+ ["3.7","25 Nov 2026","An account SMS that mentions a credit card (bill payment) stays an account · credit card shows your bill payment straight away · loan payments never counted as spending · chart info box hides when you lift your finger"],
  ["3.6","25 Nov 2026","Works inside the iPhone app (with Shift Pay): new SMS arrive from the Open Expenses shortcut; security rule blocks the page from sending anything to the internet."],
  ["3.5","25 Nov 2026","Use any of your rules on a transaction; edit rules. Learned merchants grouped by category with search. Money returned is linked (🔗) to what you lent — once settled, neither counts. Credit card bill payments are recognised and never counted as spending or money in."],
  ["3.4","25 Nov 2026","The Open Expenses shortcut can put SMS and settings in as plain text — the Base64 step is now optional."],
@@ -1429,7 +1435,7 @@ function mkTx(msg,type,amount,merchant){
   merchant=cleanMerchant(merchant||"");
   return {date:msg.date,type,amount,currency:CUR,rawMerchant:merchant||(type==="credit"?"(credit)":"(unknown)"),
     merchant:merchant||(type==="credit"?"(credit)":"(unknown)"),
-    source:/credit card/i.test(t)?"Credit card":/debit card/i.test(t)?"Debit card":/\bcard\b/i.test(t)&&!/\b(acct|account)\b/i.test(t)?"Card":"Account",
+    source:/\b(acct|account)\b/i.test(t)&&!/\b(avl\.?|available)\s*limit\b/i.test(t)&&/\b(acct|account)\b.{0,40}?\b(debited|credited)\b/i.test(t)?"Account":/credit card/i.test(t)?"Credit card":/debit card/i.test(t)?"Debit card":/\bcard\b/i.test(t)&&!/\b(acct|account)\b/i.test(t)?"Card":"Account",
     account_last4:digits.length>=3?digits.slice(-4):null,balance:b?num(b[2]||b[3]):null,
     balance_type:b?(/limit/i.test(b[1])?"available_limit":"available_balance"):null,sender:msg.sender,sms:t,manual:!!msg.manual};
 }
@@ -1785,6 +1791,7 @@ function markOwnTransfers(excl){
     [d,c].forEach(t=>{ t.own=true; t.pair=(t===d?c:d); if(!t.userCat){ t.category=OWN; t.catSrc="rule"; } t.counts=false; t.remit=false; t.salary=false; t.loan=false; t.lent=false; t.returned=false; }); });
   ALL.forEach(t=>{ if(t.category===OWN){ t.own=true; t.counts=false; t.salary=false; } });
   markCardPayments();
+  ALL.forEach(t=>{ if(t.type==="debit"&&!t.own&&isLoan(t.category)){ t.loan=true; t.counts=false; t.remit=false; t.lent=false; } else if(t.loan&&!isLoan(t.category)) t.loan=false; });
 }
 const CARDPAY=()=>debitCategories().find(c=>/card payment/i.test(c))||"Card payment";
 function markCardPayments(){
@@ -1881,7 +1888,8 @@ function showTip(e,html){ tip.innerHTML=html; tip.style.opacity=1; const p=e.tou
   tip.style.left=x+"px"; tip.style.top=y+"px"; }
 const hideTip=()=>tip.style.opacity=0;
 document.addEventListener("touchstart",e=>{ if(!e.target.closest(".hov")) hideTip(); },{passive:true});
-function bindTip(el,html){ el.classList.add("hov"); el.addEventListener("mousemove",e=>showTip(e,html)); el.addEventListener("touchstart",e=>showTip(e,html),{passive:true}); el.addEventListener("mouseleave",hideTip); }
+function bindTip(el,html){ el.classList.add("hov"); el.addEventListener("mousemove",e=>showTip(e,html)); el.addEventListener("touchstart",e=>showTip(e,html),{passive:true}); el.addEventListener("mouseleave",hideTip); el.addEventListener("touchend",()=>setTimeout(hideTip,1200),{passive:true}); }
+addEventListener("scroll",hideTip,{passive:true});
 
 function render(){
   processAll();
@@ -2014,7 +2022,8 @@ function renderPace(V){
     cross.setAttribute("x1",x(i)); cross.setAttribute("x2",x(i)); cross.setAttribute("opacity",".35");
     showTip(e,"<b>"+dl(i)+"</b> · day "+(i+1)+"<br>Spent that day "+fmtK(daily[i])+"<br>Total so far "+fmtK(cum[i])+(B?"<br>Budget pace "+fmtK(B*(i+1)/total):"")); };
   svg.classList.add("hov"); svg.addEventListener("mousemove",mv); svg.addEventListener("touchstart",mv,{passive:true}); svg.addEventListener("touchmove",mv,{passive:true});
-  svg.addEventListener("mouseleave",()=>{hideTip();cross.setAttribute("opacity","0");});
+  const off=()=>{hideTip();cross.setAttribute("opacity","0");};
+  svg.addEventListener("mouseleave",off); svg.addEventListener("touchend",off); svg.addEventListener("touchcancel",off);
 }
 let resizeT; addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>lastView&&renderPace(lastView),150); });
 
@@ -2065,9 +2074,14 @@ function renderAccounts(V){
     const all=ALL.filter(t=>t.acct===id&&t.date&&t.date<upto), inw=V.inW.filter(t=>t.acct===id);
     const isCard=id.startsWith("card"), lastBal=all.filter(t=>t.balance!=null).sort((a,b)=>b.date-a.date)[0];
     const out=inw.filter(t=>t.type==="debit").reduce((s,t)=>s+t.amount,0), inn=inw.filter(t=>t.type==="credit").reduce((s,t)=>s+t.amount,0);
+    // bill payments made from a bank account after the card's last SMS: the card has that much more limit now
+    let paid=0, paidLast=null;
+    if(isCard&&lastBal){ const cards=ids.filter(x=>x.startsWith("card")), l4=String(id).replace(/\D/g,"").slice(-4);
+      ALL.filter(t=>t.cardPay&&t.type==="debit"&&t.date&&t.acct&&t.acct.startsWith("acct")&&t.date>lastBal.date&&t.date<upto&&!(t.pair&&t.pair.acct===id))
+        .forEach(t=>{ if(cards.length===1||(l4&&String(t.sms).includes(l4))){ paid+=t.amount; if(!paidLast||t.date>paidLast) paidLast=t.date; } }); }
     return '<div class="acc'+(txAcct===id?" on":"")+'" data-a="'+esc(id)+'"><div class="h">'+(isCard?"💳":"🏦")+' '+esc(acctName(id))+'</div>'+
-      '<div class="b num">'+(lastBal?fmtK(lastBal.balance):"—")+'</div>'+
-      '<div class="s">'+(isCard?"available limit":"balance")+(lastBal?" · "+dshort(lastBal.date):"")+'</div>'+
+      '<div class="b num">'+(lastBal?fmtK(lastBal.balance+paid):"—")+'</div>'+
+      '<div class="s">'+(isCard?"available limit":"balance")+(lastBal?" · "+dshort(paidLast||lastBal.date):"")+(paid?' · incl. bill paid '+fmt(paid):"")+'</div>'+
       '<div class="s num" style="margin-top:4px">'+(isCard?"Spent "+fmt(out)+(inn?" · paid "+fmt(inn):""):"Out "+fmt(out)+" · In "+fmt(inn))+' this '+(w.kind==="year"?"year":w.kind==="custom"?"period":"month")+'</div></div>';
   }).join("");
 }
@@ -2510,7 +2524,8 @@ showSync(); if(HAS_FS) connectFolder(false);
 
 ;__api={get S(){return S},get ALL(){return ALL},get CYCLES(){return CYCLES},computeView:w=>computeView(w),
  fmt:n=>fmt(n),catIcon:c=>catIcon(c),catColor:c=>catColor(c),openSettings:()=>openSettings(),openBudgets:()=>openBudgets(),
- saveToICloud:()=>saveToICloud(),update:()=>$("updChip").click(),el:id=>$(id)};
+ saveToICloud:()=>saveToICloud(),update:()=>$("updChip").click(),el:id=>$(id),
+ buildAll:()=>buildAll(),importFiles:fs=>onFiles({target:{files:fs,value:""}})};
 })();
 
 ;return __api;
@@ -2553,8 +2568,22 @@ const expTx=()=>{try{return EXP?EXP.ALL:[]}catch(e){return []}};
 const expCycles=()=>{try{return EXP?EXP.CYCLES:[]}catch(e){return []}};
 const salaries=()=>expTx().filter(t=>t.salary&&t.date).sort((a,b)=>b.date-a.date);
 const remits=()=>expTx().filter(t=>t.remit&&t.date).sort((a,b)=>b.date-a.date);
-function fxMatch(t){ if(!payReady()) return null; const fx=PAY.S.fx||[];
-  return fx.find(x=>Math.abs((x.kwd||0)-t.amount)<0.0015&&x.date&&Math.abs(new Date(x.date+"T12:00:00")-new Date(dayKey(t.date)+"T12:00:00"))<=864e5*1.5)||null; }
+/* Link each bank transfer to one exchange in your list. The bank SMS can be a little more than the
+   amount exchanged, because the exchange company keeps a fee — so a slightly smaller amount within 3 days also matches. */
+let linkCache=null;
+function fxLinks(){
+  if(linkCache) return linkCache; const map=new Map(); linkCache=map; if(!payReady()) return map;
+  const fx=(PAY.S.fx||[]).filter(x=>x.date&&+x.kwd>0), used=new Set(), R=remits().slice().sort((a,b)=>a.date-b.date);
+  for(const pass of [0,1]) for(const t of R){ if(map.has(t)) continue;
+    const day=new Date(dayKey(t.date)+"T12:00:00"); let best=-1, bs=1e9;
+    fx.forEach((x,i)=>{ if(used.has(i)) return; const dd=Math.abs(new Date(x.date+"T12:00:00")-day)/864e5; if(dd>3.01) return;
+      const fee=t.amount-(+x.kwd), ok=pass===0?Math.abs(fee)<0.0015:(fee>0&&fee<=Math.max(5,t.amount*0.03)); if(!ok) return;
+      const sc=dd*10+Math.abs(fee); if(sc<bs){ bs=sc; best=i; } });
+    if(best>=0){ used.add(best); map.set(t,{fx:fx[best],fee:Math.max(0,t.amount-(+fx[best].kwd))}); } }
+  return map;
+}
+const fxMatch=t=>fxLinks().get(t)||null;
+function usualFee(){ const f=[...fxLinks().values()].map(v=>v.fee).filter(x=>x>0.0005).sort((a,b)=>a-b); return f.length?f[Math.floor(f.length/2)]:0; }
 function catTotals(V){ const m={}; (V.spend||[]).forEach(t=>{ m[t.category]=(m[t.category]||0)+t.spendAmt; });
   return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
 function cycleForPayMonth(m){ return expCycles().find(c=>c.salaryTx&&payMonthOfCredit(c.salaryTx.date)===m)||null; }
@@ -2567,7 +2596,7 @@ const scrollPos={}; let cur=null;
 function go(t,opt){
   opt=opt||{};
   if(cur) scrollPos[cur]=window.scrollY;
-  cur=t; calcCache.clear();
+  cur=t; calcCache.clear(); linkCache=null;
   document.querySelectorAll(".page").forEach(p=>p.hidden=p.id!==PAGE[t]);
   if(PAYTAB[t]){ try{PAY&&PAY.showTab(PAYTAB[t][0])}catch(e){} $s("payTitle").textContent=PAYTAB[t][1]; $s("payBack").hidden=!SUB[t]; refreshLinks(); }
   const top=SUB[t]?"more":t;
@@ -2655,13 +2684,17 @@ function renderMore(){
   try{ payV=(PAYM.root.querySelector(".sub span")||{}).textContent||""; }catch(e){}
   try{ expV=(EXP.el("ver")||{}).textContent||""; }catch(e){}
   $s("more").innerHTML=`
+  <div class="gh">Backup &amp; sync</div><div class="grp">
+   ${cell("📦","#34c759","Back up everything","One file: Shift Pay + Expenses settings"+(lastAll()?" · last "+lastAll():""),'data-act="backupAll"',false)}
+   ${cell("♻️","#30b0c7","Restore from a backup","Full backup, Shift Pay backup or expense_data.json",'data-act="restore"',false)}
+   ${cell("📥","#007aff","Load new SMS","Pick Total.txt and expense_data.json",'data-act="update"',false)}
+   ${cell("☁️","#32ade6","Save to iCloud","expense_data.json · keeps your laptop in step",'data-act="save"',false)}
+   ${cell("🗂","#5ac8fa","Shift Pay backup & saved months","Shift Pay only, CSV of saved months",'data-go="data"')}</div>
+  <p class="gf">Your SMS are not in backups — they always come from Total.txt.</p><input type="file" id="restoreFile" accept=".json,application/json,text/plain" hidden>
   <div class="gh">Shift Pay</div><div class="grp">
    ${cell("📋","#5856d6","Expenditure","Estimated plan + real spending from SMS",'data-go="expend"')}
-   ${cell("₹","#ff9500","Exchanges to India","Your list + transfers found in bank SMS",'data-go="fx"')}
-   ${cell("🗂","#34c759","Saved months & backup","Download or restore Shift Pay data",'data-go="data"')}</div>
-  <div class="gh">Bank SMS</div><div class="grp">
-   ${cell("📥","#007aff","Load new SMS","Pick Total.txt and expense_data.json",'data-act="update"',false)}
-   ${cell("☁️","#32ade6","Save to iCloud","Keeps your laptop in step",'data-act="save"',false)}
+   ${cell("₹","#ff9500","Exchanges to India","Your list + transfers found in bank SMS",'data-go="fx"')}</div>
+  <div class="gh">Expenses</div><div class="grp">
    ${cell("🎯","#ff2d55","Budgets","",'data-act="budgets"')}
    ${cell("⚙️","#8e8e93","Expenses settings","Categories, rules, learned merchants",'data-act="settings"')}</div>
   <div class="gh">Appearance</div><div class="grp"><div class="cell static"><div class="look" id="look" style="flex:1">${["light","dark","auto"].map(v=>`<button type="button" data-look="${v}" aria-pressed="${getLook()===v}">${{light:"☀️ Light",dark:"🌙 Dark",auto:"Automatic"}[v]}</button>`).join("")}</div></div></div>
@@ -2679,15 +2712,48 @@ function applyLook(v){ document.documentElement.dataset.look=v;
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{ m.removeAttribute("media"); m.content=dark?"#000000":"#f2f2f7"; }); }
 applyLook(getLook());
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyLook(getLook()));
-$s("more").addEventListener("click",e=>{ const lk=e.target.closest("[data-look]"); if(lk){ try{localStorage.setItem("money_look",lk.dataset.look)}catch(_){}
+$s("more").addEventListener("click",e=>{ const lk=e.target.closest("button[data-look]"); if(lk){ try{localStorage.setItem("money_look",lk.dataset.look)}catch(_){}
   applyLook(lk.dataset.look); document.querySelectorAll("#look button").forEach(b=>b.setAttribute("aria-pressed",b===lk)); return; } });
-$s("more").addEventListener("click",e=>{ if(e.target.closest("[data-look]")) return; const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
+$s("more").addEventListener("click",e=>{ if(e.target.closest("button[data-look]")) return; const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
   const a=b.dataset.act;
   if(!a) return go(b.dataset.go);
+  if(a==="backupAll") return backupAll();
+  if(a==="restore") return $s("restoreFile").click();
   if(!EXP) return;
   if(a==="save") return EXP.saveToICloud();
   go("exp");
   if(a==="update") EXP.update(); else if(a==="budgets") EXP.openBudgets(); else if(a==="settings") EXP.openSettings(); });
+
+/* ---------- backups ---------- */
+function lastAll(){ try{ const t=+localStorage.getItem("money_backup_at"); return t?new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):""; }catch(e){ return ""; } }
+async function saveFile(name,text){
+  const blob=new Blob([text],{type:"application/json"});
+  try{ const f=new File([blob],name,{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:name}); return true; } }
+  catch(e){ if(e&&e.name==="AbortError") return false; }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500); return true;
+}
+async function backupAll(){
+  const d=new Date(), o={app:"money",version:1,exported:d.toISOString(),money_version:APP_VERSION};
+  if(PAY) o.shiftpay=JSON.parse(PAY.makeBackup());
+  if(EXP) o.expenses=EXP.buildAll();
+  const ok=await saveFile("money-backup-"+dayKey(d)+".json",JSON.stringify(o,null,1));
+  if(ok){ try{ localStorage.setItem("money_backup_at",String(Date.now())); }catch(e){} if(PAY) PAY.markBackedUp(); renderMore(); toast("Backup ready — keep it in Files › iCloud Drive."); }
+}
+async function restoreText(text,name){
+  let o=null; try{ o=JSON.parse(String(text).replace(/^\uFEFF/,"")); }catch(e){}
+  if(o&&o.app==="money"){
+    if(o.expenses&&EXP){ go("exp"); await EXP.importFiles([new File([JSON.stringify(o.expenses)],"expense_data.json")]); }
+    if(o.shiftpay&&PAY){ go("data"); const m=PAY.restoreFromText(JSON.stringify(o.shiftpay)); if(m) toast(m); }
+    return;
+  }
+  if(o&&o.app==="shiftpay"&&PAY){ go("data"); const m=PAY.restoreFromText(text); if(m) toast(m); return; }
+  if(EXP){ go("exp"); await EXP.importFiles([new File([text],name||"expense_data.json")]); }
+}
+function toast(msg){ let t=$s("toast"); if(!t){ t=document.createElement("div"); t.id="toast"; t.className="toast"; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),3500); }
+document.addEventListener("change",e=>{ if(e.target&&e.target.id==="restoreFile"){ const f=e.target.files[0]; e.target.value=""; if(f) f.text().then(t=>restoreText(t,f.name)); } });
 
 /* ---------- Bank SMS inside Shift Pay ---------- */
 function ensure(id,where,pos,cls,tag){ let n=PAYM.root.getElementById(id); if(!n){ const at=PAYM.root.getElementById(where)||PAYM.root.querySelector(where); if(!at) return null;
@@ -2714,11 +2780,11 @@ function refreshFxCard(){
   const n=ensure("smsFx","fxpage","afterbegin","card sms-card"); if(!n) return;
   const R=remits().slice(0,25);
   if(!R.length){ n.innerHTML=`<h2>Transfers in bank SMS</h2><p class="sm">${expTx().length?"No money transfers home found in your bank SMS yet.":"Load your bank SMS in Expenses to find your transfers home automatically."}</p>`; return; }
-  n.innerHTML=`<h2>Transfers in bank SMS</h2><p class="sm">Found automatically. Tap <b>Add</b> to put one in your list, then type the exchange rate. It is added to the month selected on the Salary tab (${esc(monName(PAY.S.mon))}).</p>`+
-   R.map((t,i)=>{ const m=fxMatch(t); return `<div class="sms-row"><div class="t">${esc(t.merchant||"Transfer")}<small>${dShort(t.date)} ${t.date.getFullYear()}</small></div><b>${k3(t.amount)}</b>${m?'<span class="ok">✓ in list</span>':`<button class="btn" type="button" data-fx="${i}" style="min-height:34px;padding:6px 14px">Add</button>`}</div>`; }).join("");
+  n.innerHTML=`<h2>Transfers in bank SMS</h2><p class="sm">Found automatically. Already in your list? It shows ✓ — even if the bank took a little more for the exchange fee. Otherwise tap <b>Add</b> and type the rate. It is added to the month selected on the Salary tab (${esc(monName(PAY.S.mon))}).</p>`+
+   R.map((t,i)=>{ const m=fxMatch(t); return `<div class="sms-row"><div class="t">${esc(t.merchant||"Transfer")}<small>${dShort(t.date)} ${t.date.getFullYear()}</small></div><b>${k3(t.amount)}</b>${m?`<span class="ok">✓ in list${m.fee>0.0005?`<br><small style="font-weight:400;color:var(--i-2)">fee ${k3(m.fee)}</small>`:""}</span>`:`<button class="btn" type="button" data-fx="${i}" style="min-height:34px;padding:6px 14px">Add</button>`}</div>`; }).join("");
   n._list=R;
 }
-function refreshLinks(){ if(!PAY||!PAYM) return; try{ calcCache.clear(); refreshSalaryLine(); refreshSpendCard(); refreshFxCard(); }catch(e){ console.error(e); } }
+function refreshLinks(){ if(!PAY||!PAYM) return; try{ calcCache.clear(); linkCache=null; refreshSalaryLine(); refreshSpendCard(); refreshFxCard(); }catch(e){ console.error(e); } }
 if(PAYM&&PAYM.root){
   PAYM.root.addEventListener("click",e=>{
     const o=e.target.closest("[data-sms]"); if(o){ go("exp"); return; }
@@ -2726,9 +2792,10 @@ if(PAYM&&PAYM.root){
     const t=(PAYM.root.getElementById("smsFx")._list||[])[+b.dataset.fx]; if(!t) return;
     go("expend");
     const el=id=>PAYM.root.getElementById(id);
-    el("fxDate").value=dayKey(t.date); el("fxAmt").value=String(Math.round(t.amount*1000)/1000);
+    const fee=usualFee(), amt=Math.round((t.amount-(fee<t.amount?fee:0))*1000)/1000;
+    el("fxDate").value=dayKey(t.date); el("fxAmt").value=String(amt);
     el("fxAmt").dispatchEvent(new Event("input",{bubbles:true}));
-    if(!el("fxNote").value) el("fxNote").value="From bank SMS: "+(t.merchant||"transfer");
+    if(!el("fxNote").value) el("fxNote").value="From bank SMS: "+(t.merchant||"transfer")+" "+k3(t.amount)+(fee?" (incl. usual fee "+k3(fee)+")":"");
     const card=el("fxCard"); if(card) card.scrollIntoView({block:"start"});
     setTimeout(()=>{ try{ el("fxRate").focus(); }catch(e){} },300);
   });
