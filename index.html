@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<!-- Money app v2.0 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
+<!-- Money app v2.1 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Money</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,17 +21,24 @@
   --i-bg:#f2f2f7; --i-card:#ffffff; --i-card2:#ffffff; --i-label:#000000; --i-2:rgba(60,60,67,.6); --i-3:rgba(60,60,67,.3);
   --i-sep:rgba(60,60,67,.18); --i-fill:rgba(118,118,128,.12); --i-tint:#007aff; --i-tintbg:rgba(0,122,255,.12);
   --i-green:#248a3d; --i-greenbg:rgba(52,199,89,.15); --i-red:#d70015; --i-redbg:rgba(255,59,48,.12);
-  --i-orange:#c93400; --i-orangebg:rgba(255,149,0,.15); --i-bar:rgba(249,249,249,.86);
+  --i-orange:#c93400; --i-orangebg:rgba(255,149,0,.15); --i-bar:rgba(249,249,249,.86); --i-segon:#ffffff;
   --i-font:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-serif;
   --i-dfont:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,"Segoe UI",Roboto,sans-serif;
   color-scheme:light dark;
 }
-@media (prefers-color-scheme:dark){:root{
+:root[data-look=dark]{
   --i-bg:#000000; --i-card:#1c1c1e; --i-card2:#2c2c2e; --i-label:#ffffff; --i-2:rgba(235,235,245,.6); --i-3:rgba(235,235,245,.3);
   --i-sep:rgba(84,84,88,.6); --i-fill:rgba(118,118,128,.24); --i-tint:#0a84ff; --i-tintbg:rgba(10,132,255,.2);
   --i-green:#30d158; --i-greenbg:rgba(48,209,88,.18); --i-red:#ff453a; --i-redbg:rgba(255,69,58,.18);
   --i-orange:#ff9f0a; --i-orangebg:rgba(255,159,10,.18); --i-bar:rgba(22,22,24,.86);
-}}
+--i-segon:#636366;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root[data-look=auto]{
+  --i-bg:#000000; --i-card:#1c1c1e; --i-card2:#2c2c2e; --i-label:#ffffff; --i-2:rgba(235,235,245,.6); --i-3:rgba(235,235,245,.3);
+  --i-sep:rgba(84,84,88,.6); --i-fill:rgba(118,118,128,.24); --i-tint:#0a84ff; --i-tintbg:rgba(10,132,255,.2);
+  --i-green:#30d158; --i-greenbg:rgba(48,209,88,.18); --i-red:#ff453a; --i-redbg:rgba(255,69,58,.18);
+  --i-orange:#ff9f0a; --i-orangebg:rgba(255,159,10,.18); --i-bar:rgba(22,22,24,.86);
+--i-segon:#636366;color-scheme:dark}}
+:root[data-look=light]{color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;width:100%;max-width:100%;overflow-x:hidden;background:var(--i-bg);color:var(--i-label);
   font:17px/1.3 var(--i-font);-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -96,6 +103,10 @@ main{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) calc(64
 .tabbar svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-selected=true]{color:var(--i-tint)}
 .tabbar button[aria-selected=true] svg{stroke-width:2.2}
+
+.look{display:flex;gap:2px;background:var(--i-fill);border-radius:9px;padding:2px;margin:0}
+.look button{flex:1;border:0;background:none;border-radius:7px;padding:7px 0;font-size:13px;font-weight:600;cursor:pointer}
+.look button[aria-pressed=true]{background:var(--i-segon);box-shadow:0 3px 8px rgba(0,0,0,.12)}
 
 </style>
 </head>
@@ -201,7 +212,7 @@ details summary{cursor:pointer;font-weight:600}
 
 /* ---- iOS look ---- */
 :host,:host(:not([data-theme=light])),:host([data-theme=dark]){--bg:var(--i-bg);--card:var(--i-card);--ink:var(--i-label);--mut:var(--i-2);--line:var(--i-sep);--acc:var(--i-tint);
-  --accbg:var(--i-tintbg);--neg:var(--i-red);display:block;padding:0!important;color-scheme:light dark}
+  --accbg:var(--i-tintbg);--neg:var(--i-red);display:block;padding:0!important}
 .root{background:transparent;color:var(--i-label);font:16px/1.4 var(--i-font)}
 .wrap{max-width:720px;padding:0 16px 20px}
 .wrap>h1,.wrap>.sub,.page-tabs,.foot{display:none!important}
@@ -268,7 +279,11 @@ details summary{color:var(--i-tint)}
 .card,.exp-card{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 input,select{min-width:0;max-width:100%}
-@media (prefers-color-scheme:dark){.seg button[aria-pressed=true]{background:#636366;color:#fff}}
+.seg button[aria-pressed=true]{background:var(--i-segon)}
+
+/* iPhone date boxes ignore their width unless told otherwise */
+input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;text-align:left}
+::-webkit-date-and-time-value{text-align:left}
 </style><div class="root"><div class="wrap">
 <h1>Shift pay calculator</h1><p class="sub">Estimate your monthly salary and plan your expenditure. <span style="opacity:.55;font-size:11px">Version 18 Nov 2026 (C)</span></p>
 <div id="banner" class="banner" hidden></div>
@@ -580,7 +595,7 @@ details.plain[open]>summary::after{transform:rotate(90deg)}
 /* ---- iOS look ---- */
 :host{--bg:var(--i-bg);--card:var(--i-card);--line:var(--i-sep);--soft:var(--i-fill);--ink:var(--i-label);--ink2:var(--i-2);--ink3:var(--i-2);
   --accent:var(--i-tint);--accent2:var(--i-tint);--good:var(--i-green);--bad:var(--i-red);--warn:var(--i-orange);
-  --goodbg:var(--i-greenbg);--badbg:var(--i-redbg);--warnbg:var(--i-orangebg);--shadow:none;display:block;color-scheme:light dark}
+  --goodbg:var(--i-greenbg);--badbg:var(--i-redbg);--warnbg:var(--i-orangebg);--shadow:none;display:block}
 .root{background:transparent;color:var(--i-label);font:16px/1.4 var(--i-font);padding:0!important}
 .wrap{max-width:720px;padding:0 16px 20px}
 .top{padding:10px 0 8px}
@@ -606,6 +621,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--i-tint);border-c
 .wrap,.card,.grid2,.grid2>*{min-width:0;max-width:100%}
 .card{overflow-x:auto}
 input,select{min-width:0;max-width:100%}
+
+/* iPhone date boxes ignore their width unless told otherwise */
+input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;text-align:left}
+::-webkit-date-and-time-value{text-align:left}
+
+/* pop-up windows: centred, above the tab bar, scroll inside when long */
+.sheet-bg{z-index:100;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(0,0,0,.4)}
+.sheet{border-radius:14px;max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--i-card2);box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.ck,label.ck,.sheet .ck{display:block!important;padding-left:28px;position:relative;line-height:1.35}
+.ck>input[type=radio],.ck>input[type=checkbox]{position:absolute;left:0;top:1px;margin:0}
 </style><div class="root">
 <script id="embedded" type="text/plain" data-from="__FROM__" data-to="__TO__">__LOG_B64__</script>
 <script id="embedded-settings" type="text/plain">__SETTINGS_B64__</script>
@@ -706,7 +731,7 @@ input,select{min-width:0;max-width:100%}
 </div></template>
 <script>
 "use strict";
-const APP_VERSION="2.0";
+const APP_VERSION="2.1";
 /* Each engine sees only its own compartment when it looks up parts of the page. */
 function mount(id){
   const host=document.getElementById(id), root=host.attachShadow({mode:"open"});
@@ -2639,13 +2664,24 @@ function renderMore(){
    ${cell("☁️","#32ade6","Save to iCloud","Keeps your laptop in step",'data-act="save"',false)}
    ${cell("🎯","#ff2d55","Budgets","",'data-act="budgets"')}
    ${cell("⚙️","#8e8e93","Expenses settings","Categories, rules, learned merchants",'data-act="settings"')}</div>
+  <div class="gh">Appearance</div><div class="grp"><div class="cell static"><div class="look" id="look" style="flex:1">${["light","dark","auto"].map(v=>`<button type="button" data-look="${v}" aria-pressed="${getLook()===v}">${{light:"☀️ Light",dark:"🌙 Dark",auto:"Automatic"}[v]}</button>`).join("")}</div></div></div>
+  <p class="gf">Automatic follows your iPhone's Dark Mode.</p>
   <div class="gh">About</div><div class="grp">
    <div class="cell static"><div class="t">Money</div><span class="v">${APP_VERSION}</span></div>
    <div class="cell static"><div class="t">Expenses</div><span class="v">${esc(expV)}</span></div>
    <div class="cell static"><div class="t">Shift Pay</div><span class="v">${esc(payV.replace(/^Version\s*/,""))}</span></div></div>
   <p class="gf">Private by design: this app works offline and can't send anything to the internet. Your data stays on this iPhone and in the iCloud files you choose.</p>`;
 }
-$s("more").addEventListener("click",e=>{ const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
+function getLook(){ try{ return localStorage.getItem("money_look")||"light"; }catch(e){ return "light"; } }
+function applyLook(v){ document.documentElement.dataset.look=v;
+  const dark=v==="dark"||(v==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);
+  try{ PAYM.host.dataset.theme=dark?"dark":"light"; }catch(_){}
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{ m.removeAttribute("media"); m.content=dark?"#000000":"#f2f2f7"; }); }
+applyLook(getLook());
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyLook(getLook()));
+$s("more").addEventListener("click",e=>{ const lk=e.target.closest("[data-look]"); if(lk){ try{localStorage.setItem("money_look",lk.dataset.look)}catch(_){}
+  applyLook(lk.dataset.look); document.querySelectorAll("#look button").forEach(b=>b.setAttribute("aria-pressed",b===lk)); return; } });
+$s("more").addEventListener("click",e=>{ if(e.target.closest("[data-look]")) return; const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
   const a=b.dataset.act;
   if(!a) return go(b.dataset.go);
   if(!EXP) return;
