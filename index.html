@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<!-- Money app v2.2 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
+<!-- Money app v2.3 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Money</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -135,7 +135,7 @@ main{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) calc(64
   <button type="button" role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11h5v-6h3v6h5V9"/></svg>Home</button>
   <button type="button" role="tab" data-tab="salary" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9.5v5M18 9.5v5"/></svg>Salary</button>
   <button type="button" role="tab" data-tab="exp" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19M6 15h4"/></svg>Expenses</button>
-  <button type="button" role="tab" data-tab="leaves" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8.5 14.5h2M13.5 14.5h2"/></svg>Leaves</button>
+  <button type="button" role="tab" data-tab="expend" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 18h4"/></svg>Expenditure</button>
   <button type="button" role="tab" data-tab="more" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>More</button>
 </nav>
 
@@ -735,7 +735,7 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 </div></template>
 <script>
 "use strict";
-const APP_VERSION="2.2";
+const APP_VERSION="2.3";
 /* Each engine sees only its own compartment when it looks up parts of the page. */
 function mount(id){
   const host=document.getElementById(id), root=host.attachShadow({mode:"open"});
@@ -2589,17 +2589,19 @@ function catTotals(V){ const m={}; (V.spend||[]).forEach(t=>{ m[t.category]=(m[t
 function cycleForPayMonth(m){ return expCycles().find(c=>c.salaryTx&&payMonthOfCredit(c.salaryTx.date)===m)||null; }
 
 /* ---------- navigation ---------- */
-const PAGE={home:"pg-home",salary:"pg-pay",leaves:"pg-pay",exp:"pg-exp",more:"pg-more",expend:"pg-pay",fx:"pg-pay",data:"pg-pay"};
-const PAYTAB={salary:["s","Salary"],leaves:["l","Leaves"],expend:["e","Expenditure"],fx:["x","Exchanges to India"],data:["d","Salary data & backup"]};
-const SUB={expend:1,fx:1,data:1};
-const scrollPos={}; let cur=null;
+const PAGE={home:"pg-home",salary:"pg-pay",exp:"pg-exp",expend:"pg-pay",more:"pg-more",leaves:"pg-pay",fx:"pg-pay",data:"pg-pay"};
+const PAYTAB={salary:["s","Salary"],expend:["e","Expenditure"],leaves:["l","Leaves"],fx:["x","Exchanges to India"],data:["d","Salary data & backup"]};
+const SUB={leaves:1,fx:1,data:1};              // pages opened from somewhere else: they get a "‹ Back" button
+const NAMES={home:"Home",salary:"Salary",exp:"Expenses",expend:"Expenditure",more:"More"};
+const scrollPos={}; let cur=null, parent="more";
 function go(t,opt){
   opt=opt||{};
   if(cur) scrollPos[cur]=window.scrollY;
+  if(SUB[t]) parent=opt.from||(SUB[cur]?parent:(cur||"more"));
   cur=t; calcCache.clear(); linkCache=null;
   document.querySelectorAll(".page").forEach(p=>p.hidden=p.id!==PAGE[t]);
-  if(PAYTAB[t]){ try{PAY&&PAY.showTab(PAYTAB[t][0])}catch(e){} $s("payTitle").textContent=PAYTAB[t][1]; $s("payBack").hidden=!SUB[t]; refreshLinks(); }
-  const top=SUB[t]?"more":t;
+  if(PAYTAB[t]){ try{PAY&&PAY.showTab(PAYTAB[t][0])}catch(e){} $s("payTitle").textContent=PAYTAB[t][1]; $s("payBack").hidden=!SUB[t]; $s("payBack").textContent="‹ "+(NAMES[parent]||"Back"); refreshLinks(); }
+  const top=SUB[t]?parent:t;
   document.querySelectorAll(".tabbar button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===top));
   if(!SUB[t]){ try{localStorage.setItem("money_tab",t)}catch(e){} }
   if(t==="home") renderHome();
@@ -2607,9 +2609,18 @@ function go(t,opt){
   window.scrollTo(0,opt.keepScroll?(scrollPos[t]||0):0);
 }
 document.querySelector(".tabbar").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
-  const t=b.dataset.tab; if(t===cur||(SUB[cur]&&t==="more")){ if(t===cur) window.scrollTo({top:0,behavior:"smooth"}); else go("more"); return; }
+  const t=b.dataset.tab; if(t===cur){ window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if(SUB[cur]&&t===parent){ go(t); return; }
   go(t,{keepScroll:true}); });
-$s("payBack").addEventListener("click",()=>go("more",{keepScroll:true}));
+$s("payBack").addEventListener("click",()=>go(parent,{keepScroll:true}));
+/* Links inside Shift Pay (like "View all leave records") switch its page by themselves — follow them here too. */
+const PAYLETTER={s:"salary",l:"leaves",e:"expend",x:"fx",d:"data"}, PAYSEC={calc:"s",leavepage:"l",expenditure:"e",fxpage:"x",datapage:"d"};
+if(PAYM&&PAYM.root){ let pt=null;
+  new MutationObserver(()=>{ clearTimeout(pt); pt=setTimeout(()=>{
+    if(PAGE[cur]!=="pg-pay") return;
+    const vis=Object.keys(PAYSEC).find(id=>{ const e=PAYM.root.getElementById(id); return e&&!e.hidden; }); if(!vis) return;
+    const name=PAYLETTER[PAYSEC[vis]]; if(name&&name!==cur) go(name,{from:SUB[name]?(SUB[cur]?parent:cur):undefined});
+  },0); }).observe(PAYM.root,{subtree:true,attributes:true,attributeFilter:["hidden"]}); }
 
 /* A Shift Pay pop-up (like first-time set-up) must never stay hidden behind another tab. */
 if(PAYM&&PAYM.root){
@@ -2675,7 +2686,7 @@ function renderHome(){
   $s("home").innerHTML=h+`<p class="gf" style="margin-top:22px;text-align:center">Everything stays on this iPhone · Money ${APP_VERSION}</p>`;
 }
 $s("home").addEventListener("click",e=>{ const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
-  if(b.dataset.act==="update"){ go("exp"); EXP&&EXP.update(); return; } go(b.dataset.go); });
+  if(b.dataset.act==="update"){ go("exp"); EXP&&EXP.update(); return; } go(b.dataset.go,{from:"home"}); });
 
 /* ---------- More ---------- */
 function cell(icon,bg,title,sub,attr,chev){ return `<button class="cell ic${chev===false?" act":""}" ${attr}><div class="ibox" style="background:${bg};color:#fff">${icon}</div><div class="t">${title}${sub?`<small>${sub}</small>`:""}</div>${chev===false?"":'<span class="chev">›</span>'}</button>`; }
@@ -2692,7 +2703,7 @@ function renderMore(){
    ${cell("🗂","#5ac8fa","Shift Pay backup & saved months","Shift Pay only, CSV of saved months",'data-go="data"')}</div>
   <p class="gf">Your SMS are not in backups — they always come from Total.txt.</p><input type="file" id="restoreFile" accept=".json,application/json,text/plain" hidden>
   <div class="gh">Shift Pay</div><div class="grp">
-   ${cell("📋","#5856d6","Expenditure","Estimated plan + real spending from SMS",'data-go="expend"')}
+   ${cell("🌴","#34c759","Leaves","Leave records, balance and entitlement",'data-go="leaves"')}
    ${cell("₹","#ff9500","Exchanges to India","Your list + transfers found in bank SMS",'data-go="fx"')}</div>
   <div class="gh">Expenses</div><div class="grp">
    ${cell("🎯","#ff2d55","Budgets","",'data-act="budgets"')}
@@ -2716,7 +2727,7 @@ $s("more").addEventListener("click",e=>{ const lk=e.target.closest("button[data-
   applyLook(lk.dataset.look); document.querySelectorAll("#look button").forEach(b=>b.setAttribute("aria-pressed",b===lk)); return; } });
 $s("more").addEventListener("click",e=>{ if(e.target.closest("button[data-look]")) return; const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
   const a=b.dataset.act;
-  if(!a) return go(b.dataset.go);
+  if(!a) return go(b.dataset.go,{from:"more"});
   if(a==="backupAll") return backupAll();
   if(a==="restore") return $s("restoreFile").click();
   if(!EXP) return;
@@ -2802,6 +2813,16 @@ if(PAYM&&PAYM.root){
   const net=PAYM.root.getElementById("net"); let tm=null;
   if(net) new MutationObserver(()=>{ clearTimeout(tm); tm=setTimeout(()=>{ calcCache.clear(); refreshSalaryLine(); refreshSpendCard(); },60); }).observe(net,{childList:true,subtree:true,characterData:true});
 }
+
+/* Backups live in More › Backup & sync; hide the duplicate laptop sections inside Expenses settings. */
+if(EXPM&&EXPM.root){ let st=null;
+  new MutationObserver(()=>{ clearTimeout(st); st=setTimeout(()=>{
+    EXPM.root.querySelectorAll(".sheet .sec").forEach(sec=>{ const h=sec.querySelector("h3"); if(!h||sec.dataset.moved) return;
+      if(/iCloud sync|^\s*Save\s*$/i.test(h.textContent)){ sec.dataset.moved="1"; sec.style.display="none";
+        if(!EXPM.root.getElementById("movedNote")){ const n=document.createElement("div"); n.id="movedNote"; n.className="sec";
+          n.innerHTML='<h3>☁️ Backup &amp; sync</h3><div class="msg">Load new SMS, Save to iCloud and backups are all in <b>More › Backup &amp; sync</b>.</div><div class="btns"><button class="btn" type="button" id="goBackups">Open Backup &amp; sync</button></div>';
+          sec.parentNode.insertBefore(n,sec); n.querySelector("#goBackups").onclick=()=>{ const x=EXPM.root.querySelector(".sheet-bg.on .sheet-h button"); if(x) x.click(); go("more"); }; } } });
+  },0); }).observe(EXPM.root,{subtree:true,childList:true}); }
 
 /* ---------- start ---------- */
 let start="home"; try{ start=localStorage.getItem("money_tab")||"home"; }catch(e){}
