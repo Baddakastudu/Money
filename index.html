@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self'; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Money app v1.0 · Shift Pay + Expenses. Security rule: nothing can be sent anywhere except this app's own files on GitHub. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Money</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Money">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f4f8">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#f2f4f8;font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;color:#0f1222;overflow:hidden}
+.bar{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) 8px calc(env(safe-area-inset-left) + 12px);background:#f2f4f8;z-index:2;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e9ef}
+.seg{flex:1;display:flex;background:#e3e7ee;border-radius:12px;padding:3px;gap:3px;max-width:520px;margin:0 auto}
+.seg button{flex:1;border:0;border-radius:9px;padding:9px 6px;font:inherit;font-weight:600;font-size:14.5px;background:transparent;color:#4d5368;cursor:pointer}
+.seg button[aria-selected=true]{background:#fff;color:#0f1222;box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.ver{font-size:11px;color:#8a90a2;white-space:nowrap}
+.view{position:fixed;left:0;right:0;bottom:0;border:0;width:100%;background:#f2f4f8}
+.view[hidden]{display:none}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="seg" role="tablist" aria-label="Choose app">
+    <button role="tab" id="t-pay" data-v="pay" aria-selected="true">💰 Shift Pay</button>
+    <button role="tab" id="t-exp" data-v="exp" aria-selected="false">💳 Expenses</button>
+  </div>
+  <span class="ver">v1.0</span>
+</div>
+<script>
+(function(){
+  "use strict";
+  const SRC={pay:"shiftpay.html",exp:"expenses.html"}, frames={};
+  const bar=document.querySelector(".bar");
+  const place=f=>{ f.style.top=bar.offsetHeight+"px"; f.style.height=(innerHeight-bar.offsetHeight)+"px"; };
+  function show(v){
+    if(!frames[v]){ const f=document.createElement("iframe"); f.className="view"; f.src=SRC[v]; f.title=v==="pay"?"Shift Pay":"Expenses";
+      f.setAttribute("allow","clipboard-write; clipboard-read"); document.body.appendChild(f); frames[v]=f; place(f); }
+    for(const k in frames) frames[k].hidden=(k!==v);
+    document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v));
+    try{ localStorage.setItem("money_tab",v); }catch(e){}
+  }
+  document.querySelector(".seg").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) show(b.dataset.v); });
+  addEventListener("resize",()=>{ for(const k in frames) place(frames[k]); });
+  let start="pay"; try{ start=localStorage.getItem("money_tab")||"pay"; }catch(e){}
+  show(start==="exp"?"exp":"pay");
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>

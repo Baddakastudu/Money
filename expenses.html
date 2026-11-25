@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<!-- Expense Dashboard v3.6 · 2026-11-25 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Security rule: this page is not allowed to send anything to the internet (connect-src none, form-action none). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a78d6">
+<title>Expenses</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Expenses">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f2f4f8; --card:#ffffff; --line:#e6e9ef; --soft:#f6f7fa;
+  --ink:#0f1222; --ink2:#4d5368; --ink3:#8a90a2;
+  --accent:#2a78d6; --accent2:#6250d6;
+  --good:#008300; --warn:#b87900; --warnbg:#fff4dc; --bad:#d03b3b; --badbg:#fde8e8; --goodbg:#e4f5e4;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 14px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 48px env(safe-area-inset-left)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 14px}
+.num{font-variant-numeric:tabular-nums}
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 2px 8px}
+.top h1{font-size:26px;margin:0;letter-spacing:-.02em}
+.top .sub{font-size:12.5px;color:var(--ink3)}
+.iconbtn{border:0;background:var(--card);box-shadow:var(--shadow);width:40px;height:40px;border-radius:12px;font-size:18px;cursor:pointer;color:var(--ink)}
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink2);border-radius:999px;
+  padding:7px 14px;font:inherit;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.chip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2fbf71;margin-left:6px;vertical-align:1px}
+.custom{display:none;gap:10px;align-items:end;margin:-4px 0 12px;flex-wrap:wrap}
+.custom.on{display:flex}
+/* hero */
+.hero{border-radius:22px;padding:18px 18px 16px;color:#fff;margin-bottom:12px;
+  background:linear-gradient(135deg,#2a78d6 0%,#4a5fd8 55%,#6250d6 100%);box-shadow:0 8px 24px rgba(42,120,214,.28)}
+.hero .cyc{font-size:13px;opacity:.85;margin-bottom:12px}
+.hero .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.hero .l{font-size:12px;opacity:.8}
+.hero .v{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:2px;line-height:1.15}
+.hero .v small{font-size:12px;font-weight:600;opacity:.8;margin-right:3px}
+.hero .n{font-size:11.5px;opacity:.75;margin-top:2px}
+.hero .spent .v{font-size:26px}
+@media (max-width:560px){.hero .three{grid-template-columns:1fr 1fr}.hero .spent{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.22);padding-top:10px}}
+.bud{margin-top:14px;background:rgba(255,255,255,.14);border-radius:14px;padding:10px 12px}
+.bud .bar{position:relative;height:10px;background:rgba(255,255,255,.25);border-radius:6px;overflow:visible;margin:8px 0 6px}
+.bud .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:#fff}
+.bud .fill.warn{background:#ffd166}.bud .fill.bad{background:#ff8a8a}
+.bud .pace{position:absolute;top:-4px;bottom:-4px;width:2px;background:#fff;opacity:.9;border-radius:1px}
+.bud .row{display:flex;justify-content:space-between;font-size:12.5px;gap:8px;flex-wrap:wrap}
+.bud .setb{background:none;border:1px solid rgba(255,255,255,.6);color:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.alert{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:11px 13px;margin-bottom:12px;font-size:14px;font-weight:500}
+.alert.bad{background:var(--badbg);color:#8f1f1f}.alert.warn{background:var(--warnbg);color:#7a5000}.alert.good{background:var(--goodbg);color:#0d5b0d}
+.alert .ic{font-size:17px;line-height:1.2}
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+@media (max-width:700px){.tiles{grid-template-columns:1fr 1fr}}
+.tile{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center}
+.tile .ti{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex:none}
+.tile .l{font-size:12px;color:var(--ink3)}
+.tile .v{font-size:16px;font-weight:650}
+/* cards */
+.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h2{font-size:16px;margin:0;letter-spacing:-.01em}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.ch .hint{font-size:12px;color:var(--ink3)}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+.linkbtn{border:0;background:none;color:var(--accent);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;padding:4px 0}
+/* category rows */
+.crow{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--soft);cursor:pointer}
+.crow:last-child{border-bottom:0}
+.cic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px}
+.crow .nm{font-size:14px;font-weight:550;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.crow .meta{font-size:12px;color:var(--ink3)}
+.crow .amt{text-align:right;font-weight:650;font-size:14px}
+.crow .amt .meta{font-weight:400}
+.track{height:6px;background:var(--soft);border-radius:4px;margin-top:6px;overflow:hidden}
+.track .f{height:100%;border-radius:0 4px 4px 0}
+.st{font-size:11px;font-weight:650;border-radius:999px;padding:1px 7px}
+.st.warn{background:var(--warnbg);color:#7a5000}.st.bad{background:var(--badbg);color:#8f1f1f}
+/* chart */
+.chart{position:relative}
+.chart svg{display:block;width:100%;overflow:visible}
+#tip{position:fixed;pointer-events:none;background:#0f1222;color:#fff;font-size:12px;padding:7px 10px;border-radius:9px;
+  opacity:0;transition:opacity .1s;z-index:50;max-width:250px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+/* merchants */
+.mrow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:7px 0;font-size:14px;border-bottom:1px solid var(--soft)}
+.mrow:last-child{border-bottom:0}
+.rank{width:28px;height:28px;border-radius:9px;background:var(--soft);display:grid;place-items:center;font-size:12px;color:var(--ink2);font-weight:600}
+.mrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* transactions */
+.tools{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.search{flex:1;min-width:160px}
+input,select,textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:9px 11px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(42,120,214,.35);border-color:var(--accent)}
+.tools select{width:auto;max-width:48%}
+textarea{min-height:90px;font-size:13px;font-family:ui-monospace,Menlo,monospace}
+.dayh{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ink3);padding:14px 2px 4px;text-transform:uppercase;letter-spacing:.04em}
+.trow{display:grid;grid-template-columns:40px 1fr auto;gap:11px;align-items:center;padding:9px 2px;cursor:pointer;border-radius:12px}
+.trow:active{background:var(--soft)}
+.trow .nm{font-weight:550;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .meta{font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .amt{font-weight:650;text-align:right;white-space:nowrap}
+.trow .amt.cr{color:var(--good)}
+.trow .amt .meta{font-weight:400;text-align:right}
+.badge{display:inline-block;font-size:10.5px;font-weight:650;padding:1px 6px;border-radius:6px;background:var(--soft);color:var(--ink2);margin-left:4px;vertical-align:1px}
+.empty{color:var(--ink3);font-size:14px;padding:22px 0;text-align:center}
+.more{display:block;width:100%;margin-top:8px}
+/* buttons */
+.btn{font:inherit;font-size:14.5px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:550}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--ink2);font-weight:550;margin-bottom:10px}
+label.ck{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--ink2);margin:6px 0 10px}
+label.ck input{width:auto}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=file]{display:none}
+.msg{font-size:13px;color:var(--ink2)}
+.status{font-size:13px;color:var(--ink2);margin:0 2px 10px;min-height:0}
+/* unrecognised */
+.ucount{background:var(--badbg);color:#8f1f1f;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
+details.u{border:1px solid var(--line);border-radius:14px;margin-top:8px;background:var(--card)}
+details.u>summary{list-style:none;cursor:pointer;padding:11px 12px;display:flex;gap:10px;align-items:flex-start}
+details.u>summary::-webkit-details-marker{display:none}
+details.u>summary .chev{margin-left:auto;color:var(--ink3);transition:transform .15s}
+details.u[open]>summary .chev{transform:rotate(90deg)}
+details.u .body{padding:0 12px 12px}
+.smsbox{background:var(--soft);border-radius:10px;padding:9px 10px;font-size:12.5px;font-family:ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;margin-bottom:10px;color:var(--ink2)}
+details.plain>summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between}
+details.plain>summary::-webkit-details-marker{display:none}
+details.plain>summary::after{content:"›";color:var(--ink3);transition:transform .15s}
+details.plain[open]>summary::after{transform:rotate(90deg)}
+/* v3 */
+.fyrow{display:flex;gap:8px;align-items:center;padding:4px 2px 0}
+.fyrow select{width:auto;padding:7px 10px;border-radius:999px;font-size:13.5px;font-weight:600;background:var(--card)}
+.chip:disabled{opacity:.35;cursor:default}
+#syncChip{font-size:12.5px;padding:6px 11px}
+#syncChip.warn{background:var(--warnbg);border-color:#f0d9a8;color:#7a5000}
+.accs{display:flex;gap:10px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.accs::-webkit-scrollbar{display:none}
+.acc{flex:1 0 210px;max-width:340px}
+.acc{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);cursor:pointer;border:2px solid transparent}
+.acc.on{border-color:var(--accent)}
+.acc .h{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink2);font-weight:600}
+.acc .b{font-size:19px;font-weight:700;margin-top:4px}
+.acc .s{font-size:12px;color:var(--ink3)}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--soft);color:var(--ink2);border-radius:10px;padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.rv{border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-top:8px}
+.rv .top1{display:flex;gap:10px;align-items:center}
+.rv .q{font-size:14px;margin:8px 0 2px}
+.rv .why{font-size:12px;color:var(--ink3)}
+.rcount{background:#e8e6fb;color:#3b2fa0;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
+.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:5px;vertical-align:1px}
+.cdot.high{background:#1baf7a}.cdot.medium{background:#eda100}.cdot.low{background:#d03b3b}
+.ai{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:6px;background:#e8e6fb;color:#3b2fa0;margin-left:4px;vertical-align:1px}
+/* sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(15,18,34,.42);display:none;z-index:40;align-items:flex-end;justify-content:center}
+.sheet-bg.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:22px 22px 0 0;
+  padding:8px 18px calc(18px + env(safe-area-inset-bottom));animation:up .18s ease-out}
+@media (min-width:700px){.sheet-bg{align-items:center}.sheet{border-radius:22px}}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sheet-h b{font-size:17px}
+.sec{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.sec h3{font-size:14px;margin:0 0 8px}
+.lrow{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--soft);font-size:13.5px}
+.lrow .x{border:0;background:none;color:var(--bad);font-size:13px;cursor:pointer;flex:none}
+.brow{display:grid;grid-template-columns:30px 1fr 120px;gap:8px;align-items:center;margin-bottom:6px;font-size:14px}
+.brow input{padding:7px 9px;text-align:right}
+</style>
+</head>
+<body>
+<script id="embedded" type="text/plain" data-from="__FROM__" data-to="__TO__">__LOG_B64__</script>
+<script id="embedded-settings" type="text/plain">__SETTINGS_B64__</script>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Expenses</h1><div class="sub"><span id="subtitle"></span> · <span id="ver"></span></div></div>
+    <div style="display:flex;gap:8px;align-items:center"><button class="chip" id="syncChip" style="display:none"></button><button class="chip" id="updChip" style="display:none;font-size:12.5px;padding:6px 11px">📥 Update</button><button class="iconbtn" id="openSettings" aria-label="Settings">⚙︎</button></div>
+  </div>
+
+  <div class="fyrow"><select id="fySel" aria-label="Financial year"></select><span class="sub" id="fyHint"></span></div>
+  <div class="chips" id="chips"></div>
+  <div class="custom" id="customRow">
+    <label class="f" style="margin:0">From<input type="date" id="from"></label>
+    <label class="f" style="margin:0">To<input type="date" id="to"></label>
+  </div>
+  <div class="status" id="status"></div>
+  <div id="saveNudge"></div>
+
+  <div class="hero" id="hero"></div>
+  <div id="alert"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="accs" id="accs"></div>
+
+  <div class="card" id="reviewCard" style="display:none">
+    <div class="ch"><h2>🤖 To review</h2><span class="rcount" id="rcount"></span></div>
+    <div class="msg">The dashboard learns from every answer you give here — the more you review, the fewer questions it asks.</div>
+    <div id="review"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="ch"><h2>Spending by category</h2><button class="linkbtn" id="editBudgets">Budgets</button></div>
+      <div id="cats"></div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="ch"><h2>Spending pace</h2><span class="hint" id="paceHint"></span></div>
+        <div class="chart" id="pace"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><h2>Top merchants</h2></div>
+        <div id="merch"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="peopleCard" style="display:none">
+    <div class="ch"><h2>People</h2><span class="hint">Money lent &amp; returned · all time</span></div>
+    <div id="people"></div>
+  </div>
+
+  <div class="card" id="healthCard" style="display:none">
+    <div class="ch"><h2>Health check</h2><span class="hint">Do the SMS add up?</span></div>
+    <div id="health"></div>
+  </div>
+
+  <div class="card" id="unrecCard" style="display:none">
+    <div class="ch"><h2>Needs your check</h2><span class="ucount" id="ucount"></span></div>
+    <div class="msg">These SMS were captured but not understood. Open one, fill in the amount, and tick “learn this format” so future SMS like it are read automatically.</div>
+    <div id="unrec"></div>
+    <div class="msg" id="incomplete" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><h2>Transactions</h2><span class="hint" id="txCount"></span></div>
+    <div class="tabs" id="acctTabs"></div>
+    <div class="tools">
+      <input class="search" id="q" type="search" placeholder="Search merchant, amount, SMS…">
+      <select id="catFilter"><option value="">All categories</option></select>
+    </div>
+    <div id="tx"></div>
+  </div>
+
+  <div class="card">
+    <details class="plain"><summary>Add a missed SMS</summary>
+      <div style="margin-top:12px">
+        <div class="f2">
+          <label class="f">Date &amp; time<input type="datetime-local" id="addDate"></label>
+          <label class="f">Sender<input id="addSender" placeholder="e.g. NBK, KFH, Boubyan"></label>
+        </div>
+        <label class="f">Message<textarea id="addBody" placeholder="Paste the SMS text exactly as received"></textarea></label>
+        <button class="btn pri" id="addOne">Add message</button>
+        <div class="msg" style="margin-top:14px">Or paste many, one per line: <code>2026-11-02 14:05 | Sender | SMS text</code></div>
+        <textarea id="paste" style="margin-top:6px" placeholder="One SMS per line"></textarea>
+        <button class="btn" id="addPaste" style="margin-top:8px">Add all lines</button>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheetBg"><div class="sheet"><div class="grab"></div>
+  <div class="sheet-h"><b id="sheetT"></b><button class="iconbtn" id="sheetX" style="width:34px;height:34px;font-size:14px;box-shadow:none;background:var(--soft)">✕</button></div>
+  <div id="sheetB"></div></div></div>
+<div id="tip"></div>
+<input type="file" id="file" multiple>
+<input type="file" id="setFile" multiple>
+
+<script>
+(function(){
+"use strict";
+const CUR="KWD";
+const APP_VERSION="3.6", APP_DATE="25 Nov 2026";
+const CHANGELOG=[
+ ["3.6","25 Nov 2026","Works inside the iPhone app (with Shift Pay): new SMS arrive from the Open Expenses shortcut; security rule blocks the page from sending anything to the internet."],
+ ["3.5","25 Nov 2026","Use any of your rules on a transaction; edit rules. Learned merchants grouped by category with search. Money returned is linked (🔗) to what you lent — once settled, neither counts. Credit card bill payments are recognised and never counted as spending or money in."],
+ ["3.4","25 Nov 2026","The Open Expenses shortcut can put SMS and settings in as plain text — the Base64 step is now optional."],
+ ["3.3","25 Nov 2026","Laptop sync reads only Total.txt (changeable in Settings), so other files in the Shortcuts folder are never mistaken for SMS."],
+ ["3.2","24 Nov 2026","☁️ iCloud sync: on a laptop (Chrome/Edge) the dashboard reads your SMS from the iCloud folder and saves expense_data.json by itself; on iPhone ☁️ Save to iCloud hands it to a shortcut. Changes from both devices are merged item by item — the newest change wins, nothing is dropped."],
+ ["3.1","24 Nov 2026","✍️ Teach a rule: pick words from an SMS and say what they mean (category, name, or not a transaction). Shows every matching message before saving; applies to past and future SMS; listed in Settings."],
+ ["3.0","24 Nov 2026","Smart engine: learns categories from your choices, “To review” inbox with reasons, confidence for every transaction, regular-bill and money-returned detection. Separate views for each account and the credit card. Financial-year month buttons. Learned lists folded away in Settings."],
+ ["2.8","24 Nov 2026","Ready for GitHub Pages: Home Screen icon and name, opens full-screen from the Home Screen."],
+ ["2.7","24 Nov 2026","Renaming a credit no longer renames every credit; remembering is type-aware and shows how many it affects. Lent to friends / Returned by friends with a People list. Transfers between your own accounts are ignored in totals. Salary can't be started by a small or early credit. WAMD/local transfers are no longer counted as “sent home”."],
+ ["2.6","24 Nov 2026","Version number shown in the app and saved in every file; change history in Settings."],
+ ["2.5","24 Nov 2026","Restore brings back settings and SMS from any saved file; SMS kept on the phone between visits."],
+ ["2.4","24 Nov 2026","Transactions header shows the exact salary-day date range."],
+ ["2.3","24 Nov 2026","One Save button (expense_data.json) with an unsaved-changes reminder."],
+ ["2.2","24 Nov 2026","Started with = balance on salary day; loan payments excluded from spending; Loan paid tile replaces Avg/day."],
+ ["2.1","24 Nov 2026","Reads the Shortcuts file layout and dates like “23 Nov 2026 at 1:00 PM”; reads new SMS wordings; Health check; Q8 as fuel."],
+ ["2.0","24 Nov 2026","Redesign: salary-month tabs, budgets with warnings, learn merchants and SMS formats, add missed SMS."],
+ ["1.0","Nov 2026","First version."]
+];
+const DEFAULT_RULES=[
+"Loan payment*: LOAN, INSTALLMENT, INSTALMENT, INSTL, EMI, REPAYMENT, FINANCE PAYMENT",
+"Lent to friends:",
+"Card payment*: CREDIT CARD PAYMENT, CC PAYMENT, CARD PAYMENT, CARD SETTLEMENT",
+"Sent home & remittance*: EXCHANGE, MUZAINI, BEC, BAHRAIN EXCHANGE, ALANSARI, AL ANSARI, LULU EXCHANGE, UAE EXCHANGE, REMIT, REMITTANCE, WESTERN UNION, MONEYGRAM",
+"Transfers out: WAMD, TRANSFER, TRF",
+"Cash withdrawal: ATM, CASH WITHDRAWAL",
+"Utilities & telecom: MEWR, MEW, ZAIN, OOREDOO, STC, VIVA",
+"Groceries: LULU HYPERMARKET, LULU HYPER, SULTAN CENTER, SULTAN CENTRE, TSC, CITY CENTRE, CARREFOUR, CO-OP, COOP, GEANT, OASIS, GRAND HYPER, NESTO, SPAR, SAVE ON, GRANDIOSE, MARKAZ, HYPERMARKET, SUPERMARKET",
+"Dining & delivery: TALABAT, DELIVEROO, KEETA, JAHEZ, CARRIAGE, MCDONALD, MCDONALDS, KFC, STARBUCKS, RESTAURANT, CAFE, COFFEE, PIZZA, BURGER, TIM HORTONS, COSTA, CARIBOU, DUNKIN, SHAKE SHACK, PIZZA HUT, HARDEES, BURGER KING, SUBWAY, PAPA JOHNS, DOMINOS, FIVE GUYS, CHEESECAKE",
+"Fuel & transport: KNPC, Q8, OULA, SOOT, ALFA, PETROL, FUEL, CAREEM, UBER",
+"Shopping: AMAZON, NOON, XCITE, EUREKA, IKEA, CENTREPOINT, SHEIN, BLINK, H&M, AVENUES, 360 MALL, MAX, SPLASH, ZARA, HOME CENTRE, TRUE VALUE, BEST AL YOUSIFI, ALGHANIM, LULU CENTER, DECATHLON",
+"Health: PHARMACY, CLINIC, HOSPITAL, MEDICAL, DENTAL, YIACO, BOOTS, ALDAWAA",
+"Education: SCHOOL, ACADEMY, JARIR, BOOKSTORE",
+"Travel: AIRWAYS, JAZEERA, AIR INDIA, INDIGO, AIRLINES, BOOKING.COM, HOTEL, KUWAIT AIRWAYS, EMIRATES, QATAR AIRWAYS, FLYDUBAI, AGODA",
+"Subscriptions: NETFLIX, SPOTIFY, APPLE.COM, GOOGLE, OSN, SHAHID, YOUTUBE",
+"+Salary: SALARY, SAL, PAYROLL, WPS, WAGES",
+"+Refund: REFUND, REVERSAL, REVERSED",
+"+Returned by friends:",
+"+Cash deposit: ATM DEPOSIT, CASH DEPOSIT, DEPOSIT",
+"+Transfers in: WAMD, GB TRANSFER, TRANSFER, TRF"
+].join("\n");
+const DEBIT_FALLBACK="Other", CREDIT_FALLBACK="Money in (other)";
+const PAL=["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300","#6250d6","#e34948"];
+const ICONS=[[/between my/i,"🔁"],[/lent|lend/i,"🤝"],[/returned|repaid/i,"🤲"],[/loan|instal/i,"🏦"],[/grocer/i,"🛒"],[/dining|food|deliver|restaurant/i,"🍔"],[/fuel|transport/i,"🚗"],[/shop/i,"🛍️"],[/health|medic/i,"💊"],
+  [/educat|school/i,"📚"],[/travel/i,"✈️"],[/subscr/i,"📺"],[/utilit|telecom/i,"💡"],[/cash/i,"🏧"],[/remit|transfer|home/i,"💸"],
+  [/card payment/i,"💳"],[/salary/i,"💰"],[/refund/i,"↩️"],[/money in/i,"📥"],[/rent|house/i,"🏠"],[/kid|child/i,"🧸"]];
+const isRemit=c=>/remit|sent home/i.test(c);
+const isSalary=c=>/salary/i.test(c);
+const isLent=c=>/\blent\b|lend/i.test(c);
+const isReturned=c=>/returned|repaid|pay\s*back/i.test(c);
+const OWN="Between my accounts";
+const isLoan=c=>/loan|instal|\bemi\b/i.test(c);
+
+/* ---------- storage & settings ---------- */
+const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+const blank=()=>({v:2,updated:0,links:{},smsFiles:"Total.txt",times:{},gone:{},rules:null,userRules:[],confirmed:{},dismissed:{},accounts:{},fyStart:4,budgets:{total:0,cats:{}},merchants:{},txOverrides:{},fixes:{},templates:[],ignored:{},extraMessages:[]});
+function normSettings(o){ const b=blank(); if(!o||typeof o!=="object") return b;
+  for(const k of Object.keys(b)) if(o[k]!=null) b[k]=o[k];
+  b.budgets=Object.assign({total:0,cats:{}},b.budgets||{}); if(!b.budgets.cats) b.budgets.cats={};
+  if(!Array.isArray(b.templates)) b.templates=[]; if(!Array.isArray(b.userRules)) b.userRules=[]; if(!Array.isArray(b.extraMessages)) b.extraMessages=[];
+  return b; }
+let S=blank();
+/* ---------- sync-safe merge: every item remembers when it was last changed ---------- */
+const SYNC_MAPS=["merchants","txOverrides","fixes","ignored","confirmed","dismissed","accounts","links"];
+const SYNC_ARRS={templates:t=>(t.sender||"")+"|"+t.re, userRules:r=>r.id, extraMessages:m=>(m.date||"")+"|"+m.text};
+function flatSettings(st){ const f={}; st=st||{};
+  SYNC_MAPS.forEach(sec=>Object.entries(st[sec]||{}).forEach(([k,v])=>f[sec+"|"+k]=v));
+  Object.entries((st.budgets||{}).cats||{}).forEach(([k,v])=>f["bcat|"+k]=v);
+  for(const sec in SYNC_ARRS) (st[sec]||[]).forEach(x=>f[sec+"|"+SYNC_ARRS[sec](x)]=x);
+  if(st.budgets&&st.budgets.total) f["btotal|"]=st.budgets.total;
+  if(st.rules!=null) f["rules|"]=st.rules;
+  if(st.fyStart) f["fyStart|"]=st.fyStart;
+  return f; }
+function unflatSettings(f,base){ const st=normSettings(base);
+  SYNC_MAPS.forEach(sec=>st[sec]={}); st.budgets={total:0,cats:{}}; for(const sec in SYNC_ARRS) st[sec]=[]; st.rules=null; st.fyStart=4;
+  for(const [p,v] of Object.entries(f)){ const i=p.indexOf("|"), sec=p.slice(0,i), k=p.slice(i+1);
+    if(SYNC_MAPS.includes(sec)) st[sec][k]=v; else if(sec==="bcat") st.budgets.cats[k]=v; else if(SYNC_ARRS[sec]) st[sec].push(v);
+    else if(sec==="btotal") st.budgets.total=v; else if(sec==="rules") st.rules=v; else if(sec==="fyStart") st.fyStart=v; }
+  for(const sec of ["templates","userRules"]) st[sec].sort((a,b)=>(a.created||0)-(b.created||0));
+  return st; }
+const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+let SNAP=null; // flat copy of the settings as last stamped
+function stampChanges(){ // record the time of every added / changed / removed item since the last stamp
+  const now=Date.now(), f=flatSettings(S); S.times=S.times||{}; S.gone=S.gone||{};
+  if(SNAP){ for(const p in f) if(!(p in SNAP)||!sameJSON(f[p],SNAP[p])){ S.times[p]=now; delete S.gone[p]; }
+            for(const p in SNAP) if(!(p in f)){ S.gone[p]=now; delete S.times[p]; } }
+  SNAP=f; }
+function mergeSettings(A,B){ // A = this device, B = the other copy (file / other device)
+  if(!B) return normSettings(A); if(!A) return normSettings(B);
+  const fa=flatSettings(A), fb=flatSettings(B), ta=A.times||{}, tb=B.times||{}, ga=A.gone||{}, gb=B.gone||{};
+  const out={}, times={}, gone={};
+  const state=(f,t,g,p)=>{ const tt=t[p]||0, gg=g[p]||0; if(gg>tt) return {del:true,ts:gg}; if(p in f) return {v:f[p],ts:tt}; return {none:true,ts:0}; };
+  new Set([...Object.keys(fa),...Object.keys(fb),...Object.keys(ga),...Object.keys(gb)]).forEach(p=>{
+    const a=state(fa,ta,ga,p), b=state(fb,tb,gb,p);
+    let w=a.ts>b.ts?a:b.ts>a.ts?b:(a.none?b:a); // newer wins; on a tie keep this device's value, never drop an item
+    if(w.del){ gone[p]=w.ts; return; } if(w.none) return;
+    out[p]=w.v; if(w.ts) times[p]=w.ts; });
+  const m=unflatSettings(out,A); m.times=times; m.gone=gone; m.updated=Math.max(A.updated||0,B.updated||0); m.app_version=APP_VERSION;
+  return m; }
+
+(function loadSettings(){
+  let local=null; try{ local=JSON.parse(store.get("exp_settings_v2")||"null"); }catch(e){}
+  let emb=null; const raw=document.getElementById("embedded-settings").textContent.trim();
+  if(raw && !raw.startsWith("_"+"_")){ try{ emb=JSON.parse(embText(raw)); if(emb&&emb.settings) emb=emb.settings; }catch(e){} }
+  const pick=local||emb;
+  S=local&&emb?mergeSettings(normSettings(local),normSettings(emb)):normSettings(pick);
+  if(emb){ store.set("exp_settings_v2",JSON.stringify(S)); if(!local||(emb.updated||0)>=(local.updated||0)) store.set("exp_saved_at",String(S.updated||0)); }
+  // v2.7: split local transfers (WAMD) from money sent home
+  if(S.rules&&/^Transfers & remittance\*?:.*\bWAMD\b.*$/m.test(S.rules)) S.rules=S.rules.replace(/^Transfers & remittance\*?:.*$/m,DEFAULT_RULES.split("\n").filter(l=>/^(Sent home & remittance|Transfers out)/.test(l)).join("\n"));
+  if(S.budgets&&S.budgets.cats&&S.budgets.cats["Transfers & remittance"]){ S.budgets.cats["Sent home & remittance"]=S.budgets.cats["Transfers & remittance"]; delete S.budgets.cats["Transfers & remittance"]; }
+  if(!pick){ const oldR=store.get("exp_rules"); if(oldR){ S.rules=oldR.replace(/^Transfers & remittance:/m,"Transfers & remittance*:"); } }
+  SNAP=flatSettings(S);
+})();
+function saveSettings(){ stampChanges(); S.updated=Date.now(); S.app_version=APP_VERSION; store.set("exp_settings_v2",JSON.stringify(S)); if(typeof onSettingsChanged==="function") onSettingsChanged(); }
+const rulesText=()=>S.rules||DEFAULT_RULES;
+let rules=compileRules(rulesText());
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const fmt=n=>(n==null||!isFinite(n))?"—":n.toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3});
+const fmt0=n=>n.toLocaleString("en-US",{maximumFractionDigits:0});
+const fmtK=n=>CUR+" "+fmt(n);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const hm=d=>pad(d.getHours())+":"+pad(d.getMinutes());
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const dshort=d=>d.getDate()+" "+MON[d.getMonth()];
+const norm=s=>String(s==null?"":s).replace(/\s+/g," ").trim();
+const num=s=>parseFloat(String(s).replace(/,/g,""));
+const r3=n=>Math.round(n*1000)/1000;
+const sum=a=>a.reduce((s,t)=>s+t.amount,0);
+function hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)+s.length.toString(36);}
+function b64text(raw){ const bin=atob(raw.replace(/\s+/g,"")); return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))); }
+// the shortcut may put the data in as Base64 or as plain text — accept both
+function embText(raw){ const r=raw.trim(); if(/^[A-Za-z0-9+\/=\s]+$/.test(r)&&r.replace(/\s/g,"").length%4===0){ try{ const t=b64text(r); if(!/[\u0000-\u0008\u000E-\u001F]/.test(t)) return t; }catch(e){} } return r; }
+const startOfDay=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
+const addMonths=(d,n)=>{const x=new Date(d);const day=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+n);x.setDate(Math.min(day,new Date(x.getFullYear(),x.getMonth()+1,0).getDate()));return x;};
+
+/* ---------- reading the log ---------- */
+let logMessages=[];
+function extractObjects(text){
+  const out=[]; let depth=0,start=-1,inStr=false,escp=false; const spans=[];
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(inStr){ if(escp) escp=false; else if(c==="\\") escp=true; else if(c==='"') inStr=false; continue; }
+    if(c==='"'){ if(depth>0) inStr=true; continue; }
+    if(c==="{"){ if(depth===0) start=i; depth++; }
+    else if(c==="}"&&depth>0){ depth--; if(depth===0){ try{ out.push(JSON.parse(text.slice(start,i+1))); spans.push([start,i+1]); }catch(e){} } } }
+  let rest=""; let p=0; spans.forEach(([s,e])=>{ rest+=text.slice(p,s)+"\n"; p=e; }); rest+=text.slice(p);
+  return {objs:out,rest};
+}
+function pickKey(o,keys){ for(const k of Object.keys(o)){ if(keys.includes(k.toLowerCase())) return o[k]; } return undefined; }
+const MONRE="(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\\.?";
+const monIdx=s=>MON.findIndex(m=>s.slice(0,3).toLowerCase()===m.toLowerCase());
+const TIME="(?:[^0-9\\n]{0,8}?(\\d{1,2})[:.](\\d{2})(?:[:.](\\d{2}))?\\s*([AaPp]\\.?[Mm]\\.?)?)?";
+const DATE_PATTERNS=[
+  // 2026-11-23 13:00 / 2026-11-23T13:00:00
+  {re:new RegExp("(\\d{4})-(\\d{1,2})-(\\d{1,2})"+TIME),f:m=>[+m[1],+m[2]-1,+m[3]],t:4},
+  // 23 Nov 2026 at 1:00 PM
+  {re:new RegExp("(\\d{1,2})(?:st|nd|rd|th)?[\\s-]+"+MONRE+"[\\s,-]+(\\d{4})"+TIME,"i"),f:m=>[+m[3],monIdx(m[2]),+m[1]],t:4},
+  // Nov 23, 2026 at 1:00 PM
+  {re:new RegExp(MONRE+"\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})"+TIME,"i"),f:m=>[+m[3],monIdx(m[1]),+m[2]],t:4},
+  // 23/11/2026, 13:00
+  {re:new RegExp("(\\d{1,2})[\\/.](\\d{1,2})[\\/.](\\d{4})"+TIME),f:m=>[+m[3],+m[2]-1,+m[1]],t:4}
+];
+function matchDate(s){
+  s=String(s).replace(/[  ]/g," ");
+  for(const p of DATE_PATTERNS){ const m=s.match(p.re); if(!m) continue;
+    const [y,mo,d]=p.f(m); if(mo<0||mo>11||d<1||d>31) continue;
+    let h=+(m[p.t]||0); const mi=+(m[p.t+1]||0), se=+(m[p.t+2]||0), ap=m[p.t+3];
+    if(ap){ const pm=/p/i.test(ap); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0; }
+    return {date:new Date(y,mo,d,h,mi,se),index:m.index,len:m[0].length}; }
+  return null;
+}
+function parseDate(v){
+  if(v==null||v==="") return null;
+  if(typeof v==="number") return new Date(v<1e12?v*1000:v);
+  const s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/.test(s)){ const d=new Date(s); if(!isNaN(d)) return d; }
+  const m=matchDate(s); if(m) return m.date;
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+// a line that is only a date (e.g. "23 Nov 2026 at 1:00 PM" or "Monday, 23 Nov 2026 13:00")
+function dateLine(line){
+  if(line.length>48) return null; const m=matchDate(line); if(!m) return null;
+  const rest=(line.slice(0,m.index)+" "+line.slice(m.index+m.len)).replace(/\b(at|on|mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/gi,"").replace(/[\s,|\-:]/g,"");
+  return rest.length<=2?m.date:null;
+}
+const looksLikeBody=l=>l.length>40||/\b(KWD|KD|debited|credited|account|acct|card|balance|dear|your)\b/i.test(l);
+function blocksToMessages(text,push){
+  const lines=text.split(/\r?\n/).map(s=>s.trim());
+  const starts=[]; lines.forEach((l,i)=>{ const d=l&&dateLine(l); if(d) starts.push([i,d]); });
+  if(!starts.length){ // old one-per-line style: "2026-11-02 14:05 | Sender | text" or bare text
+    lines.filter(Boolean).forEach(line=>{ const p=line.split(/\s*\|\s*/); const d=p.length>=2?parseDate(p[0]):null;
+      if(d&&p.length>=3) push(d,p[1],p.slice(2).join(" | ")); else if(d) push(d,"",p[1]); else push(null,"",line); });
+    return;
+  }
+  starts.forEach(([i,d],k)=>{
+    const end=k+1<starts.length?starts[k+1][0]:lines.length;
+    const block=lines.slice(i+1,end).filter(Boolean); if(!block.length) return;
+    let sender="";
+    if(block.length>1&&!looksLikeBody(block[0])){ sender=block.shift(); }
+    push(d,sender,block.join(" "));
+  });
+}
+function textToMessages(text){
+  const out=[]; const push=(date,sender,body)=>{ if(body==null||!norm(body)) return; out.push({date,sender:sender?norm(sender):"",text:String(body)}); };
+  const walk=o=>{ if(Array.isArray(o)){o.forEach(walk);return;}
+    if(o&&typeof o==="object"){ const body=pickKey(o,["text","content","message","body","sms"]);
+      if(typeof body==="string"){ push(parseDate(pickKey(o,["date","time","received","datetime","timestamp"])),pickKey(o,["sender","from","address"]),body); return; }
+      const arr=pickKey(o,["messages","items","data"]); if(Array.isArray(arr)) arr.forEach(walk); } };
+  const {objs,rest}=extractObjects(String(text).replace(/^﻿/,""));
+  objs.forEach(walk);
+  if(rest.trim()) blocksToMessages(rest,push);
+  return out;
+}
+const msgKey=m=>hash((m.date?ymd(m.date)+" "+hm(m.date):"")+"|"+norm(m.text));
+function allMessages(){
+  const extra=S.extraMessages.map(m=>({date:m.date?new Date(m.date):null,sender:m.sender||"",text:m.text,manual:true}));
+  // de-duplicate: same text within 20 minutes counts once (the same SMS saved by two shortcuts)
+  const byText=new Map(), out=[];
+  logMessages.concat(FOLDER_MSGS).concat(extra).slice().sort((a,b)=>(a.date||0)-(b.date||0)).forEach(m=>{
+    const tk=norm(m.text).toLowerCase(); const seen=byText.get(tk)||[];
+    const dup=seen.some(s=>(!s.date&&!m.date)||(s.date&&m.date&&Math.abs(s.date-m.date)<=20*60e3)||(!m.date&&s.date)||(!s.date&&m.date&&(s.date=m.date,true)));
+    if(dup){ const k=seen.find(s=>!s.sender); if(k&&m.sender) k.sender=m.sender; return; }
+    seen.push(m); byText.set(tk,seen); out.push(m); });
+  return out;
+}
+
+/* ---------- parsing one SMS ---------- */
+const NUM="([\\d,]+(?:\\.\\d+)?)";
+const AMT_RE=new RegExp("\\b(debited|credited)\\b[^0-9]{0,25}?(?:(?:KWD|KD)\\s*"+NUM+"|"+NUM+"\\s*(?:KWD|KD))","i");
+const BAL_RE=new RegExp("\\b(balance|limit|bal)\\b[^0-9]{0,40}?(?:(?:KWD|KD)\\s*([\\d,]+\\.\\d+)|([\\d,]+\\.\\d+)\\s*(?:KWD|KD))","i");
+const STOP="(?=\\s*,\\s*[A-Za-z]{2,3}\\s*\\.|\\s*\\.\\s*(?:Your|Avl|Available|Thank|Bal|Ref)|\\.\\s|\\.$|\\s+Your\\b|\\s+Avl\\b|\\s+on\\s+\\d|\\s+using\\b|\\s+via\\b|$)";
+const MERCH_DR=new RegExp("^\\s*(?:from|at|to|in|towards)\\s+(.+?)"+STOP,"i");
+const MERCH_CR=new RegExp("^\\s*(?:for|from|by|towards)\\s+(.+?)"+STOP,"i");
+const MERCH_ANY=new RegExp("^[\\s,]*(?:(?:was|is|has|been|made|done|paid|spent|sent|transferred|used)\\s+){0,3}(?:at|from|to|by|for|towards|in)\\s+(.+?)"+STOP,"i");
+function cleanMerchant(s){
+  s=norm(s).replace(/\s*-\s*/g," - ").replace(/[\s\-]*\b(?:KW|KWT)\s*$/i,"").replace(/[\s\-,]+$/,"");
+  s=s.replace(/^(.*[A-Za-z].*?)\s+#?\d{1,4}$/,"$1");
+  return s.slice(0,60);
+}
+function mkTx(msg,type,amount,merchant){
+  const t=norm(msg.text);
+  const b=t.match(BAL_RE);
+  const acct=t.match(/\b(?:card|acct\.?|account|a\/c)\s*(?:no\.?\s*|number\s*)?(?:ending\s*(?:with|in)?\s*)?([Xx*\d]{3,})\b/i);
+  const digits=acct?acct[1].replace(/\D/g,""):"";
+  merchant=cleanMerchant(merchant||"");
+  return {date:msg.date,type,amount,currency:CUR,rawMerchant:merchant||(type==="credit"?"(credit)":"(unknown)"),
+    merchant:merchant||(type==="credit"?"(credit)":"(unknown)"),
+    source:/credit card/i.test(t)?"Credit card":/debit card/i.test(t)?"Debit card":/\bcard\b/i.test(t)&&!/\b(acct|account)\b/i.test(t)?"Card":"Account",
+    account_last4:digits.length>=3?digits.slice(-4):null,balance:b?num(b[2]||b[3]):null,
+    balance_type:b?(/limit/i.test(b[1])?"available_limit":"available_balance"):null,sender:msg.sender,sms:t,manual:!!msg.manual};
+}
+function parseStrict(msg){
+  const t=norm(msg.text); const m=t.match(AMT_RE); if(!m) return null;
+  const type=/^debited$/i.test(m[1])?"debit":"credit";
+  const amount=num(m[2]||m[3]); if(!isFinite(amount)) return null;
+  const rest=t.slice(m.index+m[0].length);
+  const mm=rest.match(type==="debit"?MERCH_DR:MERCH_CR)||rest.match(MERCH_ANY);
+  return mkTx(msg,type,amount,mm?mm[1]:"");
+}
+/* generic reader: works on meaning (amount + direction words), so new wordings still read */
+const AMT_ANY=/(?:KWD|KD)\s*(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s*(?:KWD|KD)\b/gi;
+const OUT_W=/\b(debited|debit(?:ed)?\s+from|purchase[sd]?|spent|paid|payment\s+of|withdrawn|withdrawal|withdrew|transferred|deducted|charged|sent)\b/i;
+const IN_W=/\b(credited|received|deposit(?:ed)?|refund(?:ed)?|reversal|reversed|added\s+to)\b/i;
+const SKIP_W=/\b(OTP|one[\s-]?time|verification|passcode|password|will\s+be|is\s+due|due\s+(?:date|on)|declined|failed|unsuccessful|rejected|reminder|cancelled|insufficient)\b/i;
+function parseGeneric(msg){
+  const t=norm(msg.text); if(SKIP_W.test(t)) return null;
+  const tt=t.replace(/\b(credit|debit)\s+card\b/gi,"card");
+  const o=tt.search(OUT_W), n=tt.search(IN_W); if(o<0&&n<0) return null;
+  const type=n<0?"debit":o<0?"credit":(o<n?"debit":"credit");
+  AMT_ANY.lastIndex=0; let m, a=null;
+  while((m=AMT_ANY.exec(tt))){ const before=tt.slice(Math.max(0,m.index-45),m.index);
+    if(/\b(balance|limit|bal)\b[^0-9]*$/i.test(before)) continue; a={v:num(m[1]||m[2]),e:m.index+m[0].length}; break; }
+  if(!a||!isFinite(a.v)||a.v<=0) return null;
+  const mm=tt.slice(a.e).match(MERCH_ANY);
+  const tx=mkTx(msg,type,a.v,mm?mm[1]:""); tx.generic=true; return tx;
+}
+function parseSMS(msg){ return parseStrict(msg)||parseGeneric(msg); }
+/* learned formats */
+const TOK=/\d[\d,]*(?:\.\d+)?|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b/gi;
+function buildTemplate(text,amount,merchant){
+  const t=norm(text); let ms=-1,me=-1;
+  if(merchant){ const i=t.toUpperCase().indexOf(norm(merchant).toUpperCase()); if(i>=0){ms=i;me=i+norm(merchant).length;} }
+  const parts=[]; let m, amtDone=amount==null; TOK.lastIndex=0;
+  while((m=TOK.exec(t))){ const s=m.index,e=s+m[0].length; if(ms>=0&&s<me&&e>ms) continue;
+    let kind=/^\d/.test(m[0])?"num":"mon";
+    if(kind==="num"&&!amtDone&&Math.abs(num(m[0])-amount)<0.0005){kind="amt";amtDone=true;}
+    parts.push({s,e,kind}); }
+  if(!amtDone) return null;
+  if(ms>=0) parts.push({s:ms,e:me,kind:"mer"});
+  parts.sort((a,b)=>a.s-b.s);
+  const lit=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/ /g,"\\s+");
+  let re="^",pos=0,g=0,amtG=0,merG=0;
+  parts.forEach(p=>{ re+=lit(t.slice(pos,p.s));
+    if(p.kind==="num") re+="\\d[\\d,]*(?:\\.\\d+)?"; else if(p.kind==="mon") re+="[A-Za-z]+";
+    else if(p.kind==="amt"){g++;amtG=g;re+="(\\d[\\d,]*(?:\\.\\d+)?)";} else {g++;merG=g;re+="(.+?)";}
+    pos=p.e; });
+  re+=lit(t.slice(pos))+"$";
+  return {re,amtG,merG};
+}
+function applyTemplates(msg){
+  const t=norm(msg.text), snd=norm(msg.sender).toLowerCase();
+  for(const tp of S.templates){
+    if(tp.sender&&snd&&tp.sender!==snd) continue;
+    let re; try{ re=new RegExp(tp.re,"i"); }catch(e){ continue; }
+    const m=t.match(re); if(!m) continue;
+    if(tp.ignore) return "ignore";
+    const amount=num(m[tp.amtG]); if(!isFinite(amount)) continue;
+    const tx=mkTx(msg,tp.type,amount,tp.merG?m[tp.merG]:tp.merchant);
+    if(tp.category) tx.tplCat=tp.category; return tx;
+  }
+  return null;
+}
+
+/* ---------- categories ---------- */
+function compileRules(text){
+  const out=[];
+  String(text).split(/\r?\n/).forEach(line=>{
+    const m=line.match(/^\s*(\+)?\s*([^:]+?)\s*(\*)?\s*:\s*(.*)$/); if(!m) return;
+    const kws=m[4].split(",").map(s=>s.trim().toUpperCase()).filter(Boolean);
+    out.push({credit:!!m[1],name:m[2].trim(),excluded:!!m[3],
+      res:kws.map(k=>new RegExp("(^|[^A-Z0-9])"+k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"($|[^A-Z0-9])"))});
+  });
+  return out;
+}
+function categorise(tx){
+  const set=rules.filter(r=>r.credit===(tx.type==="credit"));
+  for(const hay of [tx.rawMerchant.toUpperCase(),tx.merchant.toUpperCase(),tx.sms.toUpperCase()])
+    for(const r of set) if(r.res.some(re=>re.test(hay))) return r.name;
+  return tx.type==="credit"?CREDIT_FALLBACK:DEBIT_FALLBACK;
+}
+const excludedCats=()=>{ const s=new Set(rules.filter(r=>r.excluded).map(r=>r.name)); s.add(OWN); return s; };
+function debitCategories(){ const s=new Set(rules.filter(r=>!r.credit).map(r=>r.name)); s.add("Lent to friends"); s.add(DEBIT_FALLBACK); s.add(OWN); return [...s]; }
+function creditCategories(){ const s=new Set(rules.filter(r=>r.credit).map(r=>r.name)); s.add("Returned by friends"); s.add(debitCategories().find(c=>/card payment/i.test(c))||"Card payment"); s.add(CREDIT_FALLBACK); s.add(OWN); return [...s]; }
+function allCategories(){ return debitCategories().concat(creditCategories()); }
+function catColor(c){ const i=allCategories().indexOf(c); return i>=0&&i<PAL.length*2?PAL[i%PAL.length]:"#8a90a2"; }
+function catIcon(c){ for(const [re,ic] of ICONS) if(re.test(c)) return ic; return "🧾"; }
+const iconHtml=(c,size)=>'<div class="cic" style="background:'+catColor(c)+'1f'+(size?';width:'+size+'px;height:'+size+'px':'')+'">'+catIcon(c)+'</div>';
+
+const GENERIC_MERCHANT=/^\(?(credit|unknown|debit)\)?$|\b(WAMD|TRANSFER|TRF|GB TRANSFER|SERVICE|IBAN|LINK|ATM|DEPOSIT|CASH|REMITTANCE|PAYMENT|PURCHASE|POS|ONLINE|INTERNET|MOBILE|BANKING)\b/i;
+/* ---------- processing ---------- */
+let ALL=[], NEEDFIX=[], INCOMPLETE=[], IGNORED=0, CYCLES=[];
+/* ---------- your own rules (Teach me) ---------- */
+let URULES=[];
+const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function compileUserRules(){ URULES=(S.userRules||[]).map(r=>Object.assign({},r,{_res:r.words.map(w=>new RegExp("(^|[^A-Z0-9])"+escRe(norm(w).toUpperCase()).replace(/\s+/g,"\\s+")+"($|[^A-Z0-9])"))})); }
+function ruleHit(r,text,type){
+  if(r.type!=="any"&&r.type!==type) return false;
+  const T=norm(text).toUpperCase(), hits=r._res.map(re=>re.test(T));
+  return r.mode==="any"?hits.some(Boolean):hits.every(Boolean);
+}
+function bestRule(text,type,action){ return URULES.filter(r=>r.action===action&&ruleHit(r,text,type)).sort((a,b)=>b.words.length-a.words.length||b.created-a.created)[0]||null; }
+function smsWords(sms){ const seen=new Set(), out=[];
+  norm(sms).split(/[\s,;:()\/]+/).forEach(w=>{ w=w.replace(/^[.\-]+|[.\-]+$/g,""); if(!w||w.length<2) return;
+    if(/^[\d.,]+$/.test(w)) return; if(/^(KWD|KD|YOUR|THE|HAS|BEEN|WITH|FROM|FOR|AND|IS|OF|ON|AT|TO|BY|IN|DEAR|CUSTOMER|AVL|AVAILABLE|BALANCE|LIMIT|THANK|YOU|AN|A|USING|WAS|MADE)$/i.test(w)) return;
+    const k=w.toUpperCase(); if(seen.has(k)) return; seen.add(k); out.push(w); });
+  return out.slice(0,40); }
+function rulePreview(r){
+  const byKey=new Map(ALL.map(t=>[t.key,t])), out=[];
+  allMessages().forEach(m=>{ const k=msgKey(m), t=byKey.get(k);
+    if(r.action==="ignore"){ if(ruleHit(r,m.text+" "+m.sender,"any")) out.push({m,t}); }
+    else if(t&&ruleHit(r,t.sms+" "+t.sender,t.type)) out.push({m,t}); });
+  return out.sort((a,b)=>(b.m.date||0)-(a.m.date||0));
+}
+function describeRule(r){ return (r.mode==="any"?"any of ":"")+r.words.map(w=>"“"+esc(w)+"”").join(r.mode==="any"?" / ":" + ")+" → "+
+  (r.action==="ignore"?"<b>not a transaction</b>":"<b>"+esc(r.category)+"</b>"+(r.name?" · "+esc(r.name):""))+' <span class="msg">('+(r.type==="debit"?"money out":r.type==="credit"?"money in":"in & out")+')</span>'; }
+function openTeach(src,edit){
+  // src: {sms, sender, type:"debit"|"credit"|null, merchant, category}
+  const generic=GENERIC_MERCHANT.test(src.merchant||""), start=edit?edit.words.join(", "):src.type&&src.merchant&&!generic?mkey(src.merchant):"";
+  const chips=smsWords(src.sms);
+  const catOpts=t=>(t==="credit"?creditCategories():t==="debit"?debitCategories():debitCategories().concat(creditCategories().filter(c=>!debitCategories().includes(c))));
+  openSheet(edit?"✍️ Edit rule":"✍️ Teach me",
+    '<div class="msg" style="margin-bottom:8px">Tap words from the SMS (or type them). Every message containing them — past and future — will be handled the way you choose.</div>'+
+    '<div class="smsbox" style="line-height:2">'+chips.map(w=>'<button class="tab" data-w="'+esc(w)+'" style="margin:0 4px 4px 0">'+esc(w)+'</button>').join("")+'</div>'+
+    '<label class="f">When an SMS contains<input id="tWords" value="'+esc(start)+'" placeholder="e.g. ROSTAMANI  (separate words with commas)"></label>'+
+    '<div class="f2"><label class="f">Match<select id="tMode"><option value="all">all of these words</option><option value="any">any of these words</option></select></label>'+
+    '<label class="f">For<select id="tType">'+(src.type?'<option value="'+src.type+'">'+(src.type==="debit"?"money out only":"money in only")+'</option>':'')+'<option value="any">money in &amp; out</option></select></label></div>'+
+    '<label class="f">It means<select id="tAct"></select></label>'+
+    '<label class="f" id="tNameWrap">Show it as (optional — a shop or person’s name)<input id="tName" placeholder="e.g. Rostamani Cafeteria, Ahmed"></label>'+
+    '<div id="tPrev" style="margin:4px 0 10px"></div>'+
+    '<div class="btns"><button class="btn pri" id="tSave">Save rule</button></div>',
+    b=>{
+      const fillAct=()=>{ const ty=$("tType").value; const cur=$("tAct").value||src.category;
+        $("tAct").innerHTML=catOpts(ty==="any"?null:ty).map(c=>'<option'+(c===cur?" selected":"")+'>'+esc(c)+'</option>').join("")+'<option value="__ignore"'+(cur==="__ignore"?" selected":"")+'>🚫 Not a transaction (ignore)</option>'; };
+      if(!src.type){ $("tType").value="any"; } fillAct(); if(!src.type) $("tAct").value="__ignore";
+      if(edit){ $("tMode").value=edit.mode||"all"; if(![...$("tType").options].some(o=>o.value===edit.type)) $("tType").insertAdjacentHTML("afterbegin",'<option value="'+edit.type+'">'+(edit.type==="debit"?"money out only":"money in only")+'</option>');
+        $("tType").value=edit.type; fillAct(); $("tAct").value=edit.action==="ignore"?"__ignore":edit.category; $("tName").value=edit.name||""; $("tSave").textContent="Save changes"; }
+      const build=()=>{ const words=$("tWords").value.split(",").map(norm).filter(Boolean); const ig=$("tAct").value==="__ignore";
+        return {id:"r"+Date.now().toString(36),words,mode:$("tMode").value,type:ig?"any":$("tType").value,action:ig?"ignore":"category",category:ig?null:$("tAct").value,name:ig?"":norm($("tName").value),created:Date.now()}; };
+      const prev=()=>{ const r=build(); $("tNameWrap").style.display=r.action==="ignore"?"none":"";
+        if(!r.words.length){ $("tPrev").innerHTML='<div class="msg">Add at least one word.</div>'; $("tSave").disabled=true; return; }
+        r._res=r.words.map(w=>new RegExp("(^|[^A-Z0-9])"+escRe(w.toUpperCase()).replace(/\s+/g,"\\s+")+"($|[^A-Z0-9])"));
+        const hits=rulePreview(r), short=r.words.some(w=>w.replace(/\s/g,"").length<3);
+        const COMMON=/^(KWD|KD|ACCT\.?|ACCOUNT|A\/C|DEBITED|CREDITED|CARD|CREDIT|DEBIT|BALANCE|AVL\.?|LIMIT|TRANSFER|SERVICE|DEAR|CUSTOMER|YOUR|NBK|KFH|GULFBANK|BOUBYAN|BURGAN|WARBA|ABK|CBK)$/i;
+        const common=r.mode==="all"?r.words.every(w=>COMMON.test(norm(w))):r.words.some(w=>COMMON.test(norm(w)));
+        const pool=ALL.filter(t=>r.type==="any"||t.type===r.type).length, many=hits.length>25||(hits.length>3&&pool&&hits.length/pool>0.5);
+        $("tSave").disabled=!hits.length&&false;
+        $("tPrev").innerHTML='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Matches '+hits.length+' SMS so far'+(hits.length?'':' (it will still apply to future ones)')+'</div>'+
+          ((many||short||common)?'<div class="alert warn" style="margin:4px 0 6px;font-size:13px"><span class="ic">⚠️</span><span>'+(common?'“'+esc(r.words.join(", "))+'” appears in almost every bank SMS — pick a word that’s special to this one (a shop or person’s name).':many?'This matches '+hits.length+' messages — a big share of yours. Add another word to be safer, or check the list below.':'Very short words can match by accident.')+'</span></div>':'')+
+          hits.slice(0,12).map(h=>'<div class="lrow"><span style="min-width:0">'+(h.t?esc(h.t.merchant):'<i>SMS</i>')+'<div class="msg">'+(h.m.date?dshort(h.m.date):"")+(h.t?' · now: '+esc(h.t.category):' · '+esc(norm(h.m.text).slice(0,50))+'…')+'</div></span><b class="num">'+(h.t?(h.t.type==="credit"?"+":"−")+fmt(h.t.amount):"")+'</b></div>').join("")+
+          (hits.length>12?'<div class="msg">…and '+(hits.length-12)+' more.</div>':''); };
+      b.querySelectorAll("[data-w]").forEach(c=>c.onclick=()=>{ const ws=$("tWords").value.split(",").map(norm).filter(Boolean); const w=c.dataset.w;
+        const i=ws.findIndex(x=>x.toUpperCase()===w.toUpperCase()); if(i>=0) ws.splice(i,1); else ws.push(w); $("tWords").value=ws.join(", "); c.classList.toggle("on",i<0); prev(); });
+      const cur=$("tWords").value.split(",").map(x=>norm(x).toUpperCase()); b.querySelectorAll("[data-w]").forEach(c=>c.classList.toggle("on",cur.includes(c.dataset.w.toUpperCase()))); $("tWords").oninput=prev; $("tMode").onchange=prev; $("tType").onchange=()=>{ fillAct(); prev(); }; $("tAct").onchange=prev; $("tName").oninput=()=>{};
+      prev();
+      $("tSave").onclick=()=>{ const r=build(); if(!r.words.length){ alert("Please add at least one word."); return; }
+        const n=(r._res=r.words.map(w=>new RegExp("(^|[^A-Z0-9])"+escRe(w.toUpperCase()).replace(/\s+/g,"\\s+")+"($|[^A-Z0-9])")), rulePreview(r).length); delete r._res;
+        if(n>25&&!confirm("This rule matches "+n+" messages. Save it anyway?")) return;
+        if(edit){ r.id=edit.id; r.created=edit.created; S.userRules=(S.userRules||[]).map(x=>x.id===edit.id?r:x); }
+        else S.userRules=(S.userRules||[]).concat([r]);
+        saveSettings(); closeSheet(); render(); status((edit?"Rule updated":"Rule saved")+" — applies to "+n+" SMS and all future ones."); };
+    });
+}
+
+/* ---------- smart engine (runs only on this device) ---------- */
+const WEAK_CATS=new Set(["Transfers out","Transfers in"]);
+const STOPW=new Set(["KW","KWT","KUWAIT","LLC","CO","WLL","W.L.L","BRANCH","STORE","SHOP","THE","AL","EL","CITY","BR","KSCC","KSC","COMPANY","CO.","SERVICE","SERVICES"]);
+function words(s){ return norm(s).toUpperCase().replace(/[^A-Z0-9&\s]/g," ").split(/\s+/).filter(w=>w&&!/^\d+$/.test(w)&&w.length>1); }
+function mkey(s){ const w=words(s).filter(x=>!STOPW.has(x)); if(!w.length) return norm(s).toUpperCase(); return w[0].length>=4?w[0]:w.slice(0,2).join(" "); }
+function features(t){
+  const f=[]; const mk=mkey(t.rawMerchant);
+  f.push("m:"+mk,"m:"+mk,"m:"+mk);
+  words(t.rawMerchant).forEach(w=>f.push("w:"+w));
+  if(t.merchant!==t.rawMerchant) words(t.merchant).forEach(w=>f.push("w:"+w));
+  f.push("s:"+norm(t.sender).toUpperCase(),"src:"+t.source,"a:"+Math.round(Math.log2(Math.max(0.5,t.amount))));
+  return f;
+}
+const applyFlags=(tx,excl)=>{ if(tx.own) return;
+  tx.counts=tx.type==="debit"&&!excl.has(tx.category);
+  tx.remit=tx.type==="debit"&&isRemit(tx.category);
+  tx.salary=tx.type==="credit"&&isSalary(tx.category);
+  tx.loan=tx.type==="debit"&&isLoan(tx.category);
+  tx.lent=tx.type==="debit"&&isLent(tx.category);
+  tx.returned=tx.type==="credit"&&isReturned(tx.category); };
+let MODEL=null;
+function trainModel(){
+  const M={debit:{cls:{},n:0,vocab:new Set()},credit:{cls:{},n:0,vocab:new Set()},support:{}};
+  ALL.forEach(t=>{ if(t.own&&t.catSrc!=="you") return;
+    const w=t.catSrc==="you"?1:(t.catSrc==="rule"?0.5:0); if(!w) return;
+    const T=M[t.type]; const c=T.cls[t.category]||(T.cls[t.category]={docs:0,tok:0,f:{}});
+    c.docs+=w; T.n+=w;
+    features(t).forEach(x=>{ c.f[x]=(c.f[x]||0)+w; c.tok+=w; T.vocab.add(x); });
+    if(t.catSrc==="you"){ const k=t.type+"|"+mkey(t.rawMerchant)+"|"+t.category; (M.support[k]=M.support[k]||new Set()).add(norm(t.rawMerchant).toUpperCase()); } });
+  MODEL=M;
+}
+function predict(t){
+  const T=MODEL&&MODEL[t.type]; if(!T||!T.n) return [];
+  const allowed=new Set(t.type==="credit"?creditCategories():debitCategories()); allowed.delete(OWN);
+  const V=T.vocab.size+1, fs=features(t), out=[];
+  for(const [c,d] of Object.entries(T.cls)){ if(!allowed.has(c)) continue;
+    let lp=Math.log((d.docs+0.5)/(T.n+0.5*Object.keys(T.cls).length));
+    fs.forEach(x=>{ lp+=Math.log(((d.f[x]||0)+0.1)/(d.tok+0.1*V)); }); out.push({cat:c,lp}); }
+  if(!out.length) return [];
+  const mx=Math.max(...out.map(o=>o.lp)); let z=0; out.forEach(o=>{ o.p=Math.exp(o.lp-mx); z+=o.p; }); out.forEach(o=>o.p/=z);
+  // evidence check: only trust a category that has actually seen this merchant or its words
+  const keyF=fs.filter(x=>x.startsWith("m:")||x.startsWith("w:"));
+  out.forEach(o=>{ const d=T.cls[o.cat]; o.overlap=keyF.filter(x=>d.f[x]).length; o.mhit=!!d.f["m:"+mkey(t.rawMerchant)];
+    if(!o.overlap) o.p=Math.min(o.p,0.2); else if(!o.mhit) o.p=Math.min(o.p,0.75); });
+  return out.filter(o=>o.overlap>0).sort((a,b)=>b.p-a.p);
+}
+const supportOf=(t,cat)=>{ const x=MODEL&&MODEL.support[t.type+"|"+mkey(t.rawMerchant)+"|"+cat]; return x?x.size:0; };
+function settleLending(){
+  // returns are matched to what you lent: explicit links first, then oldest open loan to the same person
+  ALL.forEach(t=>{ t.lentBack=0; t.retTo=[]; t.retLeft=0; t.spendAmt=t.amount; });
+  const pk=t=>norm(t.merchant).toLowerCase();
+  const lent=ALL.filter(t=>t.lent&&t.date).sort((a,b)=>a.date-b.date);
+  const rets=ALL.filter(t=>t.returned&&t.date).sort((a,b)=>a.date-b.date);
+  const open=l=>r3(l.amount-l.lentBack);
+  rets.forEach(r=>{ let left=r.amount; const lk=S.links[r.key];
+    if(lk){ const l=lent.find(x=>x.key===lk); if(l){ const take=Math.min(left,open(l)); if(take>0){ l.lentBack=r3(l.lentBack+take); left=r3(left-take); r.retTo.push(l); } } }
+    r.retLeft=left; });
+  rets.forEach(r=>{ let left=r.retLeft; if(left<=0.0005) return;
+    lent.filter(l=>pk(l)===pk(r)&&l.date<=r.date&&open(l)>0.0005).forEach(l=>{ if(left<=0.0005) return; const take=Math.min(left,open(l)); l.lentBack=r3(l.lentBack+take); left=r3(left-take); r.retTo.push(l); });
+    r.retLeft=left; });
+  lent.forEach(l=>{ l.spendAmt=Math.max(0,open(l)); });
+}
+function smartPass(excl){
+  trainModel();
+  ALL.forEach(t=>{ if(t.own||t.catSrc==="you") return;
+    const pr=predict(t); t.pred=pr[0]||null; if(!t.pred) return;
+    const top=t.pred, sup=supportOf(t,top.cat);
+    if((t.catSrc==="fallback"||t.catSrc==="weak")&&top.cat!==t.category&&top.p>=0.85&&sup>=2){
+      t.aiFrom=t.category; t.category=top.cat; t.catSrc="ai"; applyFlags(t,excl); } });
+}
+function markBalances(){
+  ALL.forEach(t=>t.balOk=null);
+  const groups={};
+  ALL.filter(t=>t.date&&t.balance!=null&&t.balance_type).forEach(t=>{ const k=t.balance_type+"|"+(t.account_last4||"?"); (groups[k]=groups[k]||[]).push(t); });
+  for(const k in groups){ const g=groups[k].slice().sort((a,b)=>a.date-b.date);
+    for(let i=1;i<g.length;i++){ const p=g[i-1],c=g[i]; const ok=Math.abs(c.balance-(p.balance+(c.type==="credit"?1:-1)*c.amount))<0.001;
+      if(ok){ c.balOk=true; if(p.balOk==null) p.balOk=true; } else if(c.balOk==null) c.balOk=false; } }
+}
+function scoreTx(t){
+  let s=0; const why=[];
+  if(S.confirmed[t.key]){ s+=6; why.push("you confirmed it"); }
+  if(t.how==="corrected"){ s+=3; why.push("you corrected the SMS"); } else if(t.how==="auto"||t.how==="learned"){ s+=2; why.push("known SMS format"); } else { why.push("new SMS format"); }
+  if(t.balOk===true){ s+=2; why.push("balance adds up"); } else if(t.balOk===false){ s-=3; why.push("balance doesn’t add up"); }
+  if(t.catSrc==="you"){ s+=2; why.push("category set by you"); } else if(t.catSrc==="rule"){ s+=1; why.push("category from keyword"); }
+  else if(t.catSrc==="ai"){ s+=1; why.push("category learned from your choices"); } else if(t.catSrc==="fallback"){ s-=1; why.push("category unknown"); } else if(t.catSrc==="weak"){ why.push("general transfer label"); }
+  t.conf=s>=4?"high":s>=2?"medium":"low"; t.confWhy=why;
+}
+function detectRecurring(){
+  const g={}; ALL.filter(t=>t.type==="debit"&&t.date&&!t.own).forEach(t=>{ const k=mkey(t.rawMerchant)+"|"+Math.round(t.amount); (g[k]=g[k]||[]).push(t); });
+  Object.values(g).forEach(list=>{ const months=new Set(list.map(t=>t.date.getFullYear()*12+t.date.getMonth()));
+    if(months.size>=3||(months.size>=2&&list.length>=2&&list[0].amount>=20)) list.forEach(t=>t.recurring=months.size); });
+}
+let SUGG=[];
+function learnFormat(t){ if(t.how!=="new format") return; const tp=buildTemplate(t.sms,t.amount,t.rawMerchant==="(unknown)"||t.rawMerchant==="(credit)"?"":t.rawMerchant);
+  if(tp) S.templates.push({sender:norm(t.sender).toLowerCase(),re:tp.re,amtG:tp.amtG,merG:tp.merG,merchant:tp.merG?"":t.rawMerchant,type:t.type,category:null,created:Date.now(),sample:t.sms.slice(0,120)}); }
+function peopleOwe(){ const m=new Map(); ALL.filter(t=>t.lent&&t.spendAmt>0.0005).forEach(t=>{ const k=norm(t.merchant).toLowerCase(); const g=m.get(k)||{name:t.merchant,owe:0,loans:[]}; g.owe+=t.spendAmt; g.loans.push(t); m.set(k,g); }); return [...m.values()]; }
+function buildSuggestions(){
+  const out=[], dis=k=>S.dismissed[k];
+  const owers=peopleOwe();
+  ALL.forEach(t=>{ if(t.own||S.confirmed[t.key]) return;
+    // money coming back from someone you lent to
+    if(t.type==="credit"&&!t.salary&&!t.returned&&t.catSrc!=="you"&&owers.length){
+      const exact=owers.find(p=>Math.abs(p.owe-t.amount)<0.0005), fit=exact||owers.filter(p=>p.owe+0.0005>=t.amount).sort((a,b)=>a.owe-b.owe)[0];
+      if(fit&&!dis(t.key+"|ret|"+fit.name)){ out.push({kind:"returned",t,person:fit.name,owe:fit.owe,id:t.key+"|ret|"+fit.name,score:exact?3:1}); return; } }
+    const p=t.pred;
+    if(p&&p.cat!==t.category&&t.catSrc!=="you"){
+      const sup=supportOf(t,p.cat);
+      if(((t.catSrc==="fallback"||t.catSrc==="weak")&&p.p>=0.5)||(t.catSrc==="rule"&&sup>=2&&p.p>=0.8)){
+        if(!dis(t.key+"|cat|"+p.cat)){ out.push({kind:"category",t,cat:p.cat,p:p.p,sup,id:t.key+"|cat|"+p.cat,score:2}); return; } } }
+    if(t.recurring&&(t.catSrc==="fallback"||t.catSrc==="weak")&&!dis(t.key+"|rec")){ out.push({kind:"recurring",t,id:t.key+"|rec",score:1}); return; }
+    if(t.conf==="low"&&!dis(t.key+"|low")) out.push({kind:"check",t,id:t.key+"|low",score:0});
+  });
+  return out.sort((a,b)=>(b.t.date||0)-(a.t.date||0));
+}
+function reasonFor(s){
+  const t=s.t;
+  if(s.kind==="returned") return (s.owe&&Math.abs(s.owe-t.amount)<0.0005?"Same amount "+esc(s.person)+" owes you":esc(s.person)+" still owes you "+fmt(s.owe))+".";
+  if(s.kind==="recurring") return "Same payment in "+t.recurring+" different months — looks like a regular bill (loan, rent, subscription, fees…).";
+  if(s.kind==="check") return "Please check: "+esc(t.confWhy.filter(w=>/new|doesn|unknown/.test(w)).join(", ")||"low confidence")+".";
+  const mk=mkey(t.rawMerchant), same=ALL.filter(x=>x!==t&&x.type===t.type&&x.catSrc==="you"&&x.category===s.cat&&mkey(x.rawMerchant)===mk).length;
+  if(same) return "You put "+same+" similar “"+esc(mk)+"” "+(t.type==="credit"?"credits":"payments")+" in "+esc(s.cat)+".";
+  return "Similar to other transactions you have in "+esc(s.cat)+" ("+Math.round(s.p*100)+"% sure).";
+}
+function similarFor(t,cat){ const mk=mkey(t.rawMerchant); return ALL.filter(x=>x!==t&&x.type===t.type&&!x.own&&x.catSrc!=="you"&&x.category!==cat&&mkey(x.rawMerchant)===mk); }
+
+/* ---------- accounts & card ---------- */
+let CARD_L4=new Set(), ACCT_L4=new Set();
+function learnAccounts(){ CARD_L4=new Set(); ACCT_L4=new Set();
+  ALL.forEach(t=>{ if(!t.account_last4) return; if(t.balance_type==="available_limit"||/credit card/i.test(t.source)) CARD_L4.add(t.account_last4); else if(t.balance_type==="available_balance"&&t.source==="Account") ACCT_L4.add(t.account_last4); }); }
+const acctId=t=>{ const l4=t.account_last4;
+  const card=t.balance_type==="available_limit"||/credit card/i.test(t.source)||(l4&&CARD_L4.has(l4))||(t.source==="Card"&&!(l4&&ACCT_L4.has(l4)));
+  return (card?"card":"acct")+":"+(l4||"?"); };
+function acctName(id){
+  if(S.accounts[id]&&S.accounts[id].name) return S.accounts[id].name;
+  const [kind,l4]=id.split(":"); const tx=ALL.filter(t=>acctId(t)===id);
+  const cnt={}; tx.forEach(t=>{ const s=norm(t.sender); if(s) cnt[s]=(cnt[s]||0)+1; }); const bank=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+  const credit=tx.some(t=>t.balance_type==="available_limit"||/credit card/i.test(t.source));
+  return (kind==="card"?(credit?"Credit card":"Card"):(bank||"Account"))+(l4!=="?"?" ••"+l4:"");
+}
+function accountList(){ const ids=new Map(); ALL.forEach(t=>{ const id=acctId(t); ids.set(id,(ids.get(id)||0)+1); });
+  return [...ids.keys()].sort((a,b)=>(a.startsWith("card")?1:0)-(b.startsWith("card")?1:0)||ids.get(b)-ids.get(a)); }
+
+function processAll(){
+  const excl=excludedCats(); ALL=[]; NEEDFIX=[]; INCOMPLETE=[]; IGNORED=0; compileUserRules();
+  allMessages().forEach(m=>{
+    const key=msgKey(m);
+    if(S.ignored[key]){ IGNORED++; return; }
+    if(URULES.length&&bestRule(m.text+" "+m.sender,"any","ignore")&&!S.fixes[key]){ IGNORED++; return; }
+    let tx=null, how="auto"; const f=S.fixes[key];
+    if(f){ tx=mkTx(m,f.type,f.amount,f.merchant); tx.fixCat=f.category; how="corrected"; }
+    else{ tx=parseStrict(m); if(!tx){ const r=applyTemplates(m); if(r==="ignore"){ IGNORED++; return; } if(r){ tx=r; how="learned"; } }
+      if(!tx){ tx=parseGeneric(m); if(tx) how="new format"; } }
+    if(!tx){ (m.date&&norm(m.sender)&&norm(m.text)?NEEDFIX:INCOMPLETE).push({m,key}); return; }
+    tx.key=key; tx.how=how;
+    let lm=S.merchants[tx.rawMerchant.toUpperCase()]; const ov=S.txOverrides[key];
+    // a remembered name/category only applies to the same direction (money out vs money in)
+    if(lm&&lm.type!==tx.type){
+      if(lm.type) lm=null;
+      else { // saved by an older version: paused if it is a general bank label (it used to rename everyone), else guess its direction from its category
+        const legacyType=lm.category&&creditCategories().includes(lm.category)&&!debitCategories().includes(lm.category)?"credit":"debit";
+        if(GENERIC_MERCHANT.test(tx.rawMerchant)||legacyType!==tx.type) lm=null; } }
+    let ur=ov&&ov.ruleId?URULES.find(r=>r.id===ov.ruleId&&r.action==="category")||null:null; if(ur) tx.ruleLinked=true;
+    if(!ur&&URULES.length) ur=bestRule(tx.sms+" "+tx.sender,tx.type,"category"); if(ur) tx.ruleId=ur.id;
+    if(lm&&lm.name) tx.merchant=lm.name;
+    if(ur&&ur.name) tx.merchant=ur.name;
+    if(ov&&ov.name) tx.merchant=ov.name;
+    tx.category=(ov&&ov.category)||(ur&&ur.category)||(lm&&lm.category)||tx.fixCat||tx.tplCat||categorise(tx);
+    if(!(tx.type==="credit"?creditCategories():debitCategories()).includes(tx.category)){ tx.category=categorise(tx); tx.badCat=true; }
+    tx.userCat=!!((ov&&ov.category)||(ur&&ur.category)||(lm&&lm.category)||tx.fixCat);
+    tx.catSrc=(tx.userCat||tx.tplCat)?"you":(tx.category===DEBIT_FALLBACK||tx.category===CREDIT_FALLBACK)?"fallback":WEAK_CATS.has(tx.category)?"weak":"rule";
+    applyFlags(tx,excl);
+    ALL.push(tx);
+  });
+  ALL.sort((a,b)=>(b.date||0)-(a.date||0));
+  learnAccounts(); ALL.forEach(t=>t.acct=acctId(t));
+  markOwnTransfers(excl);
+  smartPass(excl); settleLending(); markBalances(); detectRecurring(); ALL.forEach(scoreTx); SUGG=buildSuggestions();
+  NEEDFIX.sort((a,b)=>(b.m.date||0)-(a.m.date||0));
+  CYCLES=buildCycles(ALL);
+}
+function markOwnTransfers(excl){
+  // same amount out of one of your accounts/cards and into another within 15 minutes = moving your own money
+  const deb=ALL.filter(t=>t.type==="debit"&&t.date&&t.account_last4), cre=ALL.filter(t=>t.type==="credit"&&t.date&&t.account_last4);
+  const used=new Set();
+  deb.forEach(d=>{ if(d.userCat&&d.category!==OWN) return;
+    const c=cre.find(c=>!used.has(c)&&!(c.userCat&&c.category!==OWN)&&c.account_last4!==d.account_last4&&Math.abs(c.amount-d.amount)<0.0005&&Math.abs(c.date-d.date)<=15*60e3);
+    if(!c) return; used.add(c);
+    [d,c].forEach(t=>{ t.own=true; t.pair=(t===d?c:d); if(!t.userCat){ t.category=OWN; t.catSrc="rule"; } t.counts=false; t.remit=false; t.salary=false; t.loan=false; t.lent=false; t.returned=false; }); });
+  ALL.forEach(t=>{ if(t.category===OWN){ t.own=true; t.counts=false; t.salary=false; } });
+  markCardPayments();
+}
+const CARDPAY=()=>debitCategories().find(c=>/card payment/i.test(c))||"Card payment";
+function markCardPayments(){
+  // money paid INTO the credit card: the purchases were already counted, so the bill payment is not spending and not money in
+  const cp0=debitCategories().find(c=>/card payment/i.test(c))||"Card payment";
+  ALL.forEach(t=>{ if(t.own&&t.pair&&(t.acct.startsWith("card")||t.pair.acct.startsWith("card"))&&!t.userCat){ t.category=cp0; t.cardPay=true; } });
+  const cp=CARDPAY(), isRefund=t=>/\b(refund|reversal|reversed|cashback|cash back)\b/i.test(t.sms);
+  const cardCredits=ALL.filter(t=>t.type==="credit"&&t.date&&t.acct&&t.acct.startsWith("card")&&!t.own&&!isRefund(t)&&!(t.userCat&&!/card payment/i.test(t.category)));
+  const used=new Set();
+  cardCredits.forEach(c=>{
+    const d=ALL.filter(x=>x.type==="debit"&&x.date&&x.acct&&x.acct.startsWith("acct")&&!x.own&&!used.has(x)&&!(x.userCat&&!/card payment/i.test(x.category))&&Math.abs(x.amount-c.amount)<0.0005&&Math.abs(x.date-c.date)<=4*864e5)
+      .sort((a,b)=>Math.abs(a.date-c.date)-Math.abs(b.date-c.date))[0];
+    [c].concat(d?[d]:[]).forEach(t=>{ t.cardPay=true; t.own=true; if(!(S.txOverrides[t.key]||{}).name&&(GENERIC_MERCHANT.test(t.rawMerchant)||/^\(/.test(t.rawMerchant))) t.merchant="Credit card bill"; if(d) t.pair=(t===c?d:c); if(!t.userCat){ t.category=cp; t.catSrc="rule"; } t.counts=false; t.remit=false; t.salary=false; t.loan=false; t.lent=false; t.returned=false; });
+    if(d) used.add(d); });
+  ALL.forEach(t=>{ if(/card payment/i.test(t.category)){ t.cardPay=true; t.own=true; t.counts=false; t.salary=false; } });
+}
+function buildCycles(txs){
+  const dated=txs.filter(t=>t.date).slice().sort((a,b)=>a.date-b.date);
+  if(!dated.length) return [];
+  const now=new Date(), first=dated[0].date, cyc=[];
+  // a salary credit starts a new month only if it is at least 20 days after the last one and not much smaller than usual
+  const starts=[]; dated.filter(t=>t.salary).forEach(t=>{
+    if(starts.length&&t.date-starts[starts.length-1].date<20*864e5) return;
+    if(starts.length>=1){ const a=starts.map(x=>x.amount).sort((x,y)=>x-y), med=a[Math.floor(a.length/2)]; if(t.amount<med*0.5) return; }
+    starts.push(t); });
+  if(!starts.length){
+    let d=new Date(first.getFullYear(),first.getMonth(),1);
+    while(d<=now||cyc.length===0){ const e=new Date(d.getFullYear(),d.getMonth()+1,1);
+      cyc.push({start:d,end:e,open:now>=d&&now<e,label:MONL[d.getMonth()]+" "+d.getFullYear(),short:MON[d.getMonth()]+" "+d.getFullYear(),kind:"calendar",lm:d.getMonth(),ly:d.getFullYear()}); d=e; if(cyc.length>120) break; }
+  } else {
+    if(first<starts[0].date) cyc.push({start:startOfDay(first),end:starts[0].date,open:false,partial:true});
+    starts.forEach((s,i)=>cyc.push({start:s.date,end:i+1<starts.length?starts[i+1].date:null,salaryTx:s,open:i+1===starts.length}));
+    const used={};
+    cyc.forEach(c=>{ const endE=c.end||addMonths(c.start,1); const mid=new Date(c.start.getTime()+(endE-c.start)/2);
+      let lab=MONL[mid.getMonth()]+" "+mid.getFullYear(), sh=MON[mid.getMonth()]+" "+mid.getFullYear();
+      if(c.partial){ lab+=" (before salary)"; sh="Before "+MON[c.end.getMonth()]; }
+      if(used[sh]){ used[sh]++; lab+=" ("+used[sh]+")"; sh+=" ("+used[sh]+")"; } else used[sh]=1;
+      c.label=lab; c.short=sh; c.kind="salary"; c.lm=mid.getMonth(); c.ly=mid.getFullYear(); });
+  }
+  return cyc.reverse();
+}
+
+/* ---------- view state ---------- */
+let view=0; // index into CYCLES, or "custom"
+let txLimit=60;
+let fySel=null, txAcct="";
+const fyStartM=()=>Math.min(12,Math.max(1,+S.fyStart||4))-1;
+const fyOf=(m,y)=>m>=fyStartM()?y:y-1;
+const fyLabel=fy=>fyStartM()===0?String(fy):"FY "+fy+"–"+String((fy+1)%100).padStart(2,"0");
+function fyCycles(fy){ return CYCLES.map((c,i)=>({c,i})).filter(x=>fyOf(x.c.lm,x.c.ly)===fy); }
+function currentWindow(){
+  if(view==="year"){ const list=fyCycles(fySel).map(x=>x.c); if(!list.length) return null;
+    const first=list[list.length-1], open=list.some(c=>c.open), end=open?null:list.reduce((a,c)=>!a||(c.end&&c.end>a)?c.end:a,null);
+    return {start:first.start,end,open,label:fyLabel(fySel),kind:"year",months:list.length,salaryTx:first.salaryTx}; }
+  if(view==="custom"){ const f=$("from").value,t=$("to").value;
+    const start=f?new Date(f+"T00:00:00"):(CYCLES.length?CYCLES[CYCLES.length-1].start:new Date());
+    const end=t?new Date(new Date(t+"T00:00:00").getTime()+864e5):null;
+    return {start,end,open:!t||end>new Date(),label:(f||"start")+" → "+(t||"today"),kind:"custom"}; }
+  return CYCLES[view]||null;
+}
+function computeView(w){
+  const now=new Date();
+  const inW=w?ALL.filter(t=>t.date&&t.date>=w.start&&(!w.end||t.date<w.end)):[];
+  const spend=inW.filter(t=>t.counts&&t.spendAmt>0.0005), sent=inW.filter(t=>t.remit), loan=inW.filter(t=>t.loan), returned=inW.filter(t=>t.returned), lent=inW.filter(t=>t.lent), credits=inW.filter(t=>t.type==="credit");
+  const salary=credits.filter(t=>t.salary), otherIn=credits.filter(t=>!t.salary&&!t.returned&&!t.own);
+  const extraBack=returned.reduce((a,t)=>a+(t.retLeft||0),0);
+  // balances
+  const balTx=inW.filter(t=>t.balance!=null&&t.balance_type==="available_balance");
+  let acct=w&&w.salaryTx&&w.salaryTx.account_last4;
+  if(!acct){ const cnt={}; balTx.forEach(t=>{ if(t.account_last4) cnt[t.account_last4]=(cnt[t.account_last4]||0)+1; });
+    acct=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||null; }
+  const ab=balTx.filter(t=>!acct||!t.account_last4||t.account_last4===acct).sort((a,b)=>a.date-b.date);
+  let opening=null, openNote="no balance in SMS", current=null, curNote="no balance in SMS";
+  const st=w&&w.salaryTx;
+  if(st&&st.balance!=null&&st.balance_type==="available_balance"){ opening=st.balance; openNote="on salary day · "+dshort(st.date)+" "+hm(st.date); }
+  else if(st){ const prev=ALL.filter(t=>t.date&&t.date<st.date&&t.balance!=null&&t.balance_type==="available_balance"&&(!st.account_last4||!t.account_last4||t.account_last4===st.account_last4)).sort((a,b)=>b.date-a.date)[0];
+    if(prev){ opening=prev.balance+st.amount; openNote="on salary day · "+dshort(st.date)+" (worked out)"; } else { opening=st.amount; openNote="salary only · no balance in SMS"; } }
+  else if(ab.length){ const f=ab[0]; opening=f.type==="debit"?f.balance+f.amount:f.balance-f.amount; openNote="at start · "+dshort(f.date); }
+  if(ab.length){ const l=ab[ab.length-1]; current=l.balance; curNote="as of "+dshort(l.date)+" "+hm(l.date); }
+  // days
+  let total=1, elapsed=1;
+  if(w){ const endE=w.end||(w.kind==="salary"&&w.open?addMonths(w.start,1):now);
+    total=Math.max(1,Math.round((startOfDay(endE)-startOfDay(w.start))/864e5));
+    elapsed=w.open?Math.min(total,Math.max(1,Math.floor((startOfDay(now)-startOfDay(w.start))/864e5)+1)):total; }
+  const spent=spend.reduce((a,t)=>a+t.spendAmt,0);
+  return {w,inW,spend,sent,credits,salary,otherIn,opening,openNote,current,curNote,acct,total,elapsed,
+    daysLeft:w&&w.open?Math.max(1,total-elapsed+1):0,spent,sentAmt:sum(sent),loanAmt:sum(loan),lentAmt:lent.reduce((a,t)=>a+t.spendAmt,0),returnedAmt:sum(returned),returned,salaryAmt:sum(salary),otherInAmt:sum(otherIn)+extraBack};
+}
+
+/* ---------- render ---------- */
+const tip=$("tip");
+function showTip(e,html){ tip.innerHTML=html; tip.style.opacity=1; const p=e.touches?e.touches[0]:e;
+  let x=p.clientX+12,y=p.clientY-48; if(x+tip.offsetWidth>innerWidth-8) x=p.clientX-tip.offsetWidth-12; if(y<8) y=p.clientY+18;
+  tip.style.left=x+"px"; tip.style.top=y+"px"; }
+const hideTip=()=>tip.style.opacity=0;
+document.addEventListener("touchstart",e=>{ if(!e.target.closest(".hov")) hideTip(); },{passive:true});
+function bindTip(el,html){ el.classList.add("hov"); el.addEventListener("mousemove",e=>showTip(e,html)); el.addEventListener("touchstart",e=>showTip(e,html),{passive:true}); el.addEventListener("mouseleave",hideTip); }
+
+function render(){
+  processAll();
+  if(typeof view==="number"&&(view<0||view>=CYCLES.length)) view=0;
+  renderChips();
+  const w=currentWindow(), V=computeView(w);
+  $("subtitle").textContent=allMessages().length+" SMS · "+ALL.length+" transactions"; $("ver").textContent="v"+APP_VERSION;
+  renderHero(V); renderTiles(V); renderCats(V); renderPace(V); renderMerch(V); renderTx(V); renderUnrec(); renderHealth(V); renderPeople(); renderAccounts(V); renderReview(); renderSaveNudge();
+  lastView=V;
+}
+let lastView=null;
+function renderChips(){
+  const fys=[...new Set(CYCLES.map(c=>fyOf(c.lm,c.ly)))].sort((a,b)=>b-a);
+  if(typeof view==="number"&&CYCLES[view]) fySel=fyOf(CYCLES[view].lm,CYCLES[view].ly);
+  if(fySel==null||!fys.includes(fySel)) fySel=fys[0];
+  $("fySel").innerHTML=fys.map(f=>'<option value="'+f+'"'+(f===fySel?" selected":"")+'>'+fyLabel(f)+'</option>').join("")||'<option>No data</option>';
+  const fsm=fyStartM(); let h="";
+  if(fys.length) for(let i=0;i<12;i++){ const m=(fsm+i)%12, y=fySel+((fsm+i)>=12?1:0);
+    const cands=CYCLES.map((c,j)=>({c,j})).filter(x=>x.c.lm===m&&x.c.ly===y).sort((a,b)=>(a.c.partial?1:0)-(b.c.partial?1:0));
+    const idx=cands.length?cands[0].j:-1;
+    h+='<button class="chip'+(view===idx?" on":"")+'" data-i="'+idx+'"'+(idx<0?" disabled":"")+' title="'+(idx>=0?esc(CYCLES[idx].label):"No data")+'">'+MON[m]+(idx>=0&&CYCLES[idx].open?'<span class="dot"></span>':"")+'</button>'; }
+  h+='<button class="chip'+(view==="year"?" on":"")+'" data-i="year">Full year</button><button class="chip'+(view==="custom"?" on":"")+'" data-i="custom">Custom</button>';
+  $("chips").innerHTML=h; $("customRow").classList.toggle("on",view==="custom");
+  const on=$("chips").querySelector(".chip.on"); if(on) requestAnimationFrame(()=>{ const c=$("chips"); c.scrollLeft=Math.max(0,on.offsetLeft-c.clientWidth/2+on.offsetWidth/2); });
+  $("fyHint").textContent=typeof view==="number"&&CYCLES[view]?CYCLES[view].label+" · from "+dshort(CYCLES[view].start):"";
+}
+$("fySel").addEventListener("change",e=>{ fySel=+e.target.value; const l=fyCycles(fySel); view=l.length?l[0].i:"year"; txLimit=60; render(); });
+$("chips").addEventListener("click",e=>{ const b=e.target.closest(".chip"); if(!b) return;
+  if(b.disabled) return; const v=b.dataset.i; view=v==="custom"||v==="year"?v:+v; txLimit=60; render(); });
+$("from").addEventListener("change",render); $("to").addEventListener("change",render);
+
+function money(v){ if(v==null) return "—"; const neg=v<0; return '<small>KWD</small>'+(neg?"−":"")+fmt(Math.abs(v)); }
+const budgetFactor=w=>w&&w.kind==="year"?w.months:1;
+function budgetState(V){
+  const B=(+S.budgets.total||0)*budgetFactor(V.w); if(!B) return null;
+  const pct=V.spent/B, pacePct=V.elapsed/V.total;
+  let level="good", text="On track — "+fmtK(B-V.spent)+" left of your "+fmtK(B)+" budget.";
+  if(pct>=1){ level="bad"; text="Over budget by "+fmtK(V.spent-B)+". Spent "+Math.round(pct*100)+"% of "+fmtK(B)+"."; }
+  else if(pct>=0.8){ level="warn"; text=Math.round(pct*100)+"% of budget used"+(V.w&&V.w.open?" with "+V.daysLeft+" day"+(V.daysLeft>1?"s":"")+" to go.":"."); }
+  else if(V.w&&V.w.open&&pct>pacePct+0.1){ level="warn"; text="Spending faster than planned: "+Math.round(pct*100)+"% of budget used in "+Math.round(pacePct*100)+"% of the cycle."; }
+  return {B,pct,pacePct,level,text};
+}
+function renderHero(V){
+  const w=V.w;
+  if(!w){ $("hero").innerHTML='<div class="cyc">No transactions yet</div><div style="font-size:15px">Load your SMS log from the settings (⚙︎), or add a missed SMS at the bottom.</div>'; $("alert").innerHTML=""; return; }
+  const endTxt=w.end?dshort(new Date(w.end.getTime()-1)):(w.open?"today":"");
+  let cyc=esc(w.label)+" · "+dshort(w.start)+" → "+endTxt;
+  if(w.kind==="salary"&&w.salaryTx) cyc+=" · salary "+fmtK(w.salaryTx.amount);
+  if(w.kind==="calendar") cyc+=" · no salary SMS found, using calendar months";
+  const bs=budgetState(V);
+  let bud;
+  if(bs){
+    const fillCls=bs.level==="bad"?"bad":bs.level==="warn"?"warn":"";
+    const left=bs.B-V.spent, safe=V.daysLeft>0&&left>0?left/V.daysLeft:0;
+    bud='<div class="bud"><div class="row"><span><b>Budget</b> '+fmtK(bs.B)+'</span><span class="num">'+Math.round(bs.pct*100)+'% used</span></div>'+
+      '<div class="bar"><div class="fill '+fillCls+'" style="width:'+Math.min(100,bs.pct*100)+'%"></div>'+(w.open&&w.kind!=="year"?'<div class="pace" title="Today" style="left:calc('+(bs.pacePct*100)+'% - 1px)"></div>':"")+'</div>'+
+      '<div class="row"><span class="num">'+(left>=0?fmtK(left)+" left":fmtK(-left)+" over")+'</span>'+
+      (w.kind==="year"?'<span>'+w.months+' month'+(w.months>1?'s':'')+' × monthly budget</span>':w.open?'<span class="num">'+(V.daysLeft===1?'last day':V.daysLeft+' days left incl. today')+(safe?' · '+fmtK(safe)+'/day':'')+'</span>':'<span>Day '+V.total+' of '+V.total+'</span>')+'</div></div>';
+  } else bud='<div class="bud"><div class="row" style="align-items:center"><span>Set a monthly budget to get warnings before you overspend.</span><button class="setb" id="heroSet">Set budget</button></div></div>';
+  $("hero").innerHTML='<div class="cyc">'+cyc+'</div><div class="three">'+
+    '<div><div class="l">Started with</div><div class="v num">'+money(V.opening)+'</div><div class="n">'+esc(V.openNote)+(V.acct?" · ••"+esc(V.acct):"")+'</div></div>'+
+    '<div><div class="l">'+(w.open?"Now":"Ended with")+'</div><div class="v num">'+money(V.current)+'</div><div class="n">'+esc(V.curNote)+'</div></div>'+
+    '<div class="spent"><div class="l">Spent this '+(w.kind==="custom"?"period":w.kind==="year"?"year":"month")+'</div><div class="v num">'+money(V.spent)+'</div><div class="n">'+V.spend.length+' payments · excl. loan, sent home &amp; card bills'+(V.lentAmt?'<br>incl. '+fmt(V.lentAmt)+' lent, not yet returned':'')+'</div></div>'+
+    '</div>'+bud;
+  const hs=$("heroSet"); if(hs) hs.onclick=openBudgets;
+  const al=bs&&(bs.level!=="good")?bs:null;
+  $("alert").innerHTML=al?'<div class="alert '+al.level+'"><span class="ic">'+(al.level==="bad"?"⛔":"⚠️")+'</span><span>'+esc(al.text)+'</span></div>':"";
+}
+function renderTiles(V){
+  const t=(ic,bg,l,v)=>'<div class="tile"><div class="ti" style="background:'+bg+'">'+ic+'</div><div><div class="l">'+l+'</div><div class="v num">'+v+'</div></div></div>';
+  $("tiles").innerHTML=t("💰","#e4f5e4","Salary in",fmt(V.salaryAmt))+t("💸","#e8e6fb","Sent home",fmt(V.sentAmt))+
+    t("📥","#e3f0fb","Other money in",fmt(V.otherInAmt))+t("🏦","#fff1df","Loan paid",fmt(V.loanAmt));
+}
+function renderCats(V){
+  const by=new Map(); V.spend.forEach(t=>{ const g=by.get(t.category)||{a:0,n:0}; g.a+=t.spendAmt; g.n++; by.set(t.category,g); });
+  Object.keys(S.budgets.cats).forEach(c=>{ if(+S.budgets.cats[c]>0&&!by.has(c)&&debitCategories().includes(c)) by.set(c,{a:0,n:0}); });
+  const bf=budgetFactor(V.w); const rows=[...by].map(([c,g])=>({c,a:g.a,n:g.n,b:(+S.budgets.cats[c]||0)*bf})).sort((x,y)=>y.a-x.a);
+  if(!rows.length){ $("cats").innerHTML='<div class="empty">No spending in this period</div>'; return; }
+  const max=Math.max(...rows.map(r=>Math.max(Math.abs(r.a),r.b)));
+  $("cats").innerHTML=rows.map((r,i)=>{
+    const p=r.b?r.a/r.b:0; const st=r.b?(p>=1?'<span class="st bad">⛔ Over</span>':p>=0.8?'<span class="st warn">⚠ '+Math.round(p*100)+'%</span>':""):"";
+    const w=r.b?Math.min(100,p*100):(max?Math.abs(r.a)/max*100:0);
+    const col=r.b&&p>=1?"var(--bad)":catColor(r.c);
+    const gross=V.spend.reduce((s,t)=>s+t.spendAmt,0), share=gross?Math.round(r.a/gross*1000)/10:0;
+    return '<div class="crow" data-c="'+esc(r.c)+'">'+iconHtml(r.c)+'<div><div class="nm">'+esc(r.c)+st+'</div>'+
+      '<div class="track"><div class="f" style="width:'+w+'%;background:'+col+'"></div></div>'+
+      '<div class="meta">'+r.n+' txn · '+(r.neg?'taken off your spending':share+'% of spending')+'</div></div>'+
+      '<div class="amt num"'+(r.neg?' style="color:var(--good)"':'')+'>'+(r.neg?'−'+fmt(-r.a):fmt(r.a))+'<div class="meta">'+(r.neg?"money back":r.b?"of "+fmt0(r.b):"no budget")+'</div></div></div>';
+  }).join("");
+}
+$("cats").addEventListener("click",e=>{ const r=e.target.closest(".crow"); if(!r) return; $("catFilter").value=r.dataset.c; renderTx(lastView); $("tx").scrollIntoView({behavior:"smooth",block:"start"}); });
+
+function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p; }
+function renderPace(V){
+  const el=$("pace"), w=V.w;
+  if(!w||!V.inW.length){ el.innerHTML='<div class="empty">No dated spending</div>'; $("paceHint").textContent=""; return; }
+  const total=V.total, shown=w.open?V.elapsed:total, B=(+S.budgets.total||0)*budgetFactor(w);
+  const daily=new Array(total).fill(0), s0=startOfDay(w.start);
+  V.spend.forEach(t=>{ const i=Math.floor((startOfDay(t.date)-s0)/864e5+0.01); if(i>=0&&i<total) daily[i]+=t.spendAmt; });
+  const cum=[]; daily.reduce((a,v,i)=>(cum[i]=a+v),0);
+  const W=Math.max(280,el.clientWidth||560), H=210, L=6, R=58, T=14, Bt=26;
+  const ymax=niceMax(Math.max(B,cum[shown-1]||0,1)*1.02);
+  const x=i=>L+(total<=1?0:(i)/(total-1))*(W-L-R), y=v=>T+(1-v/ymax)*(H-T-Bt);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" height="'+H+'">';
+  [0,.5,1].forEach(f=>{ const yy=y(ymax*f); s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="#e9ebf0" stroke-width="1"'+(f?' stroke-dasharray="3 4"':'')+'/>'+
+    '<text x="'+(W-R+6)+'" y="'+(yy+4)+'" font-size="11" fill="#8a90a2">'+fmt0(ymax*f)+'</text>'; });
+  // daily bars
+  const bw=Math.max(1,Math.min(14,(W-L-R)/total-3)), dmax=Math.max(...daily,1);
+  daily.slice(0,shown).forEach((v,i)=>{ if(!v) return; const bh=Math.max(2,(v/dmax)*(H-T-Bt)*0.35);
+    s+='<rect x="'+(x(i)-bw/2)+'" y="'+(H-Bt-bh)+'" width="'+bw+'" height="'+bh+'" rx="2" fill="#2a78d6" opacity=".18"/>'; });
+  if(B){ s+='<line x1="'+x(0)+'" y1="'+y(0)+'" x2="'+x(total-1)+'" y2="'+y(B)+'" stroke="#8a90a2" stroke-width="1.5" stroke-dasharray="5 5"/>'+
+    '<text x="'+(x(total-1)-4)+'" y="'+(y(B)+16)+'" font-size="11" fill="#4d5368" text-anchor="end">Budget pace</text>'; }
+  const over=B&&cum[shown-1]>B*(shown/total)+0.0005;
+  const lc=over?"#d03b3b":"#2a78d6";
+  let pth=""; for(let i=0;i<shown;i++) pth+=(i?"L":"M")+x(i).toFixed(1)+" "+y(cum[i]).toFixed(1);
+  s+='<path d="'+pth+'L'+x(shown-1).toFixed(1)+' '+y(0)+'L'+x(0)+' '+y(0)+'Z" fill="'+lc+'" opacity=".08"/>';
+  s+='<path d="'+pth+'" fill="none" stroke="'+lc+'" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>';
+  s+='<circle cx="'+x(shown-1)+'" cy="'+y(cum[shown-1])+'" r="4.5" fill="'+lc+'" stroke="#fff" stroke-width="2"/>';
+  const dl=i=>dshort(new Date(s0.getTime()+i*864e5+3600e3*12));
+  s+='<text x="'+L+'" y="'+(H-6)+'" font-size="11" fill="#8a90a2">'+dl(0)+'</text>';
+  s+='<text x="'+((L+W-R)/2)+'" y="'+(H-6)+'" font-size="11" fill="#8a90a2" text-anchor="middle">'+dl(Math.floor((total-1)/2))+'</text>';
+  s+='<text x="'+(W-R)+'" y="'+(H-6)+'" font-size="11" fill="#8a90a2" text-anchor="end">'+dl(total-1)+'</text>';
+  s+='<line id="cross" x1="0" x2="0" y1="'+T+'" y2="'+(H-Bt)+'" stroke="#0f1222" stroke-width="1" opacity="0"/>';
+  s+='<rect id="hit" x="0" y="0" width="'+W+'" height="'+H+'" fill="transparent"/></svg>';
+  el.innerHTML=s;
+  $("paceHint").textContent="Day "+shown+" of "+total;
+  const svg=el.querySelector("svg"), cross=svg.querySelector("#cross");
+  const mv=e=>{ const p=e.touches?e.touches[0]:e; const r=svg.getBoundingClientRect(); const px=(p.clientX-r.left)*W/r.width;
+    let i=Math.round((px-L)/((W-L-R)/Math.max(1,total-1))); i=Math.max(0,Math.min(shown-1,i));
+    cross.setAttribute("x1",x(i)); cross.setAttribute("x2",x(i)); cross.setAttribute("opacity",".35");
+    showTip(e,"<b>"+dl(i)+"</b> · day "+(i+1)+"<br>Spent that day "+fmtK(daily[i])+"<br>Total so far "+fmtK(cum[i])+(B?"<br>Budget pace "+fmtK(B*(i+1)/total):"")); };
+  svg.classList.add("hov"); svg.addEventListener("mousemove",mv); svg.addEventListener("touchstart",mv,{passive:true}); svg.addEventListener("touchmove",mv,{passive:true});
+  svg.addEventListener("mouseleave",()=>{hideTip();cross.setAttribute("opacity","0");});
+}
+let resizeT; addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>lastView&&renderPace(lastView),150); });
+
+function renderMerch(V){
+  const by=new Map(); V.spend.forEach(t=>{ const g=by.get(t.merchant)||{a:0,n:0,c:t.category}; g.a+=t.spendAmt; g.n++; by.set(t.merchant,g); });
+  const rows=[...by].map(([m,g])=>({m,...g})).sort((a,b)=>b.a-a.a).slice(0,8);
+  $("merch").innerHTML=rows.length?rows.map((r,i)=>'<div class="mrow"><div class="rank">'+(i+1)+'</div><div class="nm">'+esc(r.m)+
+    '<div style="font-size:12px;color:var(--ink3)">'+r.n+' txn · '+esc(r.c)+'</div></div><div class="num" style="font-weight:650">'+fmt(r.a)+'</div></div>').join("")
+    :'<div class="empty">No spending in this period</div>';
+}
+function renderTx(V){
+  const sel=$("catFilter"), cur=sel.value;
+  const cats=[...new Set(V.inW.map(t=>t.category))].sort();
+  sel.innerHTML='<option value="">All categories</option>'+cats.map(c=>'<option'+(c===cur?" selected":"")+'>'+esc(c)+'</option>').join("");
+  if(cur&&!cats.includes(cur)) sel.value="";
+  const q=$("q").value.trim().toLowerCase();
+  const ids=[...new Set(V.inW.map(t=>t.acct))]; if(txAcct&&!ids.includes(txAcct)) txAcct="";
+  $("acctTabs").innerHTML=ids.length>1?'<button class="tab'+(txAcct?"":" on")+'" data-a="">All</button>'+accountList().filter(id=>ids.includes(id)).map(id=>'<button class="tab'+(txAcct===id?" on":"")+'" data-a="'+esc(id)+'">'+(id.startsWith("card")?"💳 ":"🏦 ")+esc(acctName(id))+'</button>').join(""):"";
+  const list=V.inW.filter(t=>(!txAcct||t.acct===txAcct)&&(!sel.value||t.category===sel.value)&&(!q||(t.merchant+" "+t.rawMerchant+" "+t.category+" "+t.sms+" "+fmt(t.amount)).toLowerCase().includes(q)));
+  const w=V.w; $("txCount").textContent=(w?dshort(w.start)+(w.kind==="salary"&&w.salaryTx?" (salary day)":"")+" → "+(w.end?dshort(new Date(w.end.getTime()-1)):"today")+" · ":"")+list.length+" shown";
+  if(!list.length){ $("tx").innerHTML='<div class="empty">No transactions match.</div>'; return; }
+  let h="", day="", shownN=0;
+  const dayTot={}; list.forEach(t=>{ const d=ymd(t.date); if(t.counts) dayTot[d]=(dayTot[d]||0)+t.amount; });
+  for(const t of list){ if(shownN>=txLimit) break; shownN++;
+    const d=ymd(t.date);
+    if(d!==day){ day=d; h+='<div class="dayh"><span>'+DOW[t.date.getDay()]+', '+dshort(t.date)+'</span><span class="num">'+(dayTot[d]?"−"+fmt(dayTot[d]):"")+'</span></div>'; }
+    const tags=(t.cardPay?'<span class="badge">card bill</span>':t.own?'<span class="badge">my accounts</span>':t.lent?'<span class="badge">'+(t.lentBack>0.0005?(t.spendAmt<=0.0005?'lent · ✓ returned':'lent · part returned'):'lent')+'</span>':t.returned?'<span class="badge">returned'+(t.retTo.length?' · 🔗':'')+'</span>':t.loan?'<span class="badge">loan</span>':t.remit?'<span class="badge">sent home</span>':(!t.counts&&t.type==="debit"?'<span class="badge">not spending</span>':""))+
+      (t.ruleId?'<span class="ai">✍️ rule</span>':t.catSrc==="ai"?'<span class="ai">🤖 learned</span>':"")+(t.recurring?'<span class="badge">monthly</span>':"")+(t.how==="new format"?'<span class="badge" style="background:#fff4dc;color:#7a5000">new format</span>':t.how==="learned"?'<span class="badge">learned</span>':t.how==="corrected"?'<span class="badge">corrected</span>':"")+(t.manual?'<span class="badge">added</span>':"");
+    h+='<div class="trow" data-k="'+esc(t.key)+'">'+iconHtml(t.category,40)+'<div style="min-width:0"><div class="nm">'+esc(t.merchant)+tags+'</div>'+
+      '<div class="meta">'+esc(t.category)+' · '+hm(t.date)+' · '+esc(acctName(t.acct))+'</div></div>'+
+      '<div class="amt num'+(t.type==="credit"?" cr":"")+'">'+(t.type==="credit"?"+":"−")+fmt(t.amount)+'<span class="cdot '+t.conf+'" title="'+t.conf+' confidence"></span>'+
+      (t.balance!=null?'<div class="meta">'+(t.balance_type==="available_limit"?"limit ":"bal ")+fmt(t.balance)+'</div>':"")+'</div></div>';
+  }
+  if(list.length>shownN) h+='<button class="btn more" id="moreTx">Show more ('+(list.length-shownN)+')</button>';
+  $("tx").innerHTML=h;
+  const mb=$("moreTx"); if(mb) mb.onclick=()=>{ txLimit+=100; renderTx(lastView); };
+}
+$("q").addEventListener("input",()=>renderTx(lastView));
+$("acctTabs").addEventListener("click",e=>{ const b=e.target.closest(".tab"); if(!b) return; txAcct=b.dataset.a; txLimit=60; renderTx(lastView); });
+$("catFilter").addEventListener("change",()=>renderTx(lastView));
+$("tx").addEventListener("click",e=>{ const r=e.target.closest(".trow"); if(!r) return; const t=ALL.find(x=>x.key===r.dataset.k); if(t) openTx(t); });
+
+/* ---------- accounts panel ---------- */
+function renderAccounts(V){
+  const w=V.w, ids=accountList(); if(!w||!ids.length){ $("accs").innerHTML=""; return; }
+  const upto=w.end||new Date(8.64e15);
+  $("accs").innerHTML=ids.map(id=>{
+    const all=ALL.filter(t=>t.acct===id&&t.date&&t.date<upto), inw=V.inW.filter(t=>t.acct===id);
+    const isCard=id.startsWith("card"), lastBal=all.filter(t=>t.balance!=null).sort((a,b)=>b.date-a.date)[0];
+    const out=inw.filter(t=>t.type==="debit").reduce((s,t)=>s+t.amount,0), inn=inw.filter(t=>t.type==="credit").reduce((s,t)=>s+t.amount,0);
+    return '<div class="acc'+(txAcct===id?" on":"")+'" data-a="'+esc(id)+'"><div class="h">'+(isCard?"💳":"🏦")+' '+esc(acctName(id))+'</div>'+
+      '<div class="b num">'+(lastBal?fmtK(lastBal.balance):"—")+'</div>'+
+      '<div class="s">'+(isCard?"available limit":"balance")+(lastBal?" · "+dshort(lastBal.date):"")+'</div>'+
+      '<div class="s num" style="margin-top:4px">'+(isCard?"Spent "+fmt(out)+(inn?" · paid "+fmt(inn):""):"Out "+fmt(out)+" · In "+fmt(inn))+' this '+(w.kind==="year"?"year":w.kind==="custom"?"period":"month")+'</div></div>';
+  }).join("");
+}
+$("accs").addEventListener("click",e=>{ const a=e.target.closest(".acc"); if(!a) return; txAcct=txAcct===a.dataset.a?"":a.dataset.a; renderAccounts(lastView); renderTx(lastView); if(txAcct) $("acctTabs").scrollIntoView({behavior:"smooth",block:"start"}); });
+
+/* ---------- review inbox ---------- */
+let reviewAll=false;
+function renderReview(){
+  const list=SUGG; $("reviewCard").style.display=list.length?"":"none"; if(!list.length) return;
+  $("rcount").textContent=list.length+" to review";
+  const shown=reviewAll?list:list.slice(0,5);
+  $("review").innerHTML=shown.map((s,i)=>{ const t=s.t;
+    let q="", btns="";
+    if(s.kind==="category"){ const sim=similarFor(t,s.cat).length;
+      q='Put in <b>'+catIcon(s.cat)+' '+esc(s.cat)+'</b>?'; btns='<button class="btn sm pri" data-act="accept">Accept</button>'+(sim?'<button class="btn sm" data-act="bulk">Accept for this + '+sim+' similar…</button>':''); }
+    else if(s.kind==="returned"){ q='Is this <b>'+esc(s.person)+'</b> returning money?'; btns='<button class="btn sm pri" data-act="accept">Yes, returned by '+esc(s.person)+'</button>'; }
+    else if(s.kind==="recurring"){ q='Regular payment — which category is it?'; btns='<button class="btn sm pri" data-act="edit">Choose category</button>'; }
+    else { q='Is this read correctly?'; btns='<button class="btn sm pri" data-act="ok">✓ Looks right</button><button class="btn sm" data-act="edit">Fix</button>'; }
+    if(s.kind!=="check"&&s.kind!=="recurring") btns+='<button class="btn sm" data-act="edit">Change</button>';
+    btns+='<button class="btn sm" data-act="dismiss">Not now</button>';
+    return '<div class="rv" data-i="'+list.indexOf(s)+'"><div class="top1">'+iconHtml(t.category,36)+'<div style="flex:1;min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.merchant)+'</div>'+
+      '<div class="why">'+dshort(t.date)+' '+hm(t.date)+' · '+esc(acctName(t.acct))+' · now: '+esc(t.category)+'</div></div><div class="num" style="font-weight:650;'+(t.type==="credit"?"color:var(--good)":"")+'">'+(t.type==="credit"?"+":"−")+fmt(t.amount)+'</div></div>'+
+      '<div class="q">'+q+'</div><div class="why">'+reasonFor(s)+'</div><div class="btns" style="margin-top:8px">'+btns+'</div></div>'; }).join("")+
+    (list.length>5?'<button class="btn more" id="revMore">'+(reviewAll?"Show fewer":"Show all "+list.length)+'</button>':"");
+  const m=$("revMore"); if(m) m.onclick=()=>{ reviewAll=!reviewAll; renderReview(); };
+}
+$("review").addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return; const s=SUGG[+b.closest(".rv").dataset.i]; if(!s) return; const t=s.t, act=b.dataset.act;
+  if(act==="accept"){
+    learnFormat(t);
+    if(s.kind==="category") S.txOverrides[t.key]=Object.assign({},S.txOverrides[t.key]||{},{category:s.cat});
+    if(s.kind==="returned"){ S.txOverrides[t.key]={name:s.person,category:creditCategories().find(c=>isReturned(c))||"Returned by friends"};
+      const p=peopleOwe().find(x=>x.name===s.person); if(p&&p.loans.length) S.links[t.key]=p.loans.sort((a,b)=>Math.abs(a.spendAmt-t.amount)-Math.abs(b.spendAmt-t.amount)||a.date-b.date)[0].key; }
+    saveSettings(); render(); status("Done — learned from your answer."); }
+  if(act==="ok"){ S.confirmed[t.key]=1; learnFormat(t); saveSettings(); render(); status("Confirmed."); }
+  if(act==="dismiss"){ S.dismissed[s.id]=1; saveSettings(); render(); }
+  if(act==="edit") openTx(t);
+  if(act==="bulk"){ const sim=[t].concat(similarFor(t,s.cat));
+    openSheet("Put "+sim.length+" in "+s.cat+"?",
+      '<div class="msg" style="margin-bottom:8px">Untick any that don’t belong. Only the ticked ones change.</div>'+
+      sim.map((x,i)=>'<label class="ck" style="margin:0;padding:7px 0;border-bottom:1px solid var(--soft)"><input type="checkbox" data-k="'+i+'" checked> <span style="flex:1">'+esc(x.merchant)+' <span class="msg">· '+dshort(x.date)+' · now '+esc(x.category)+'</span></span><b class="num">'+fmt(x.amount)+'</b></label>').join("")+
+      '<div class="btns"><button class="btn pri" id="bulkGo">Apply to ticked</button></div>',
+      bb=>{ $("bulkGo").onclick=()=>{ let n=0; bb.querySelectorAll("input[data-k]").forEach(c=>{ if(!c.checked) return; const x=sim[+c.dataset.k]; S.txOverrides[x.key]=Object.assign({},S.txOverrides[x.key]||{},{category:s.cat}); n++; });
+        saveSettings(); closeSheet(); render(); status("Moved "+n+" to "+s.cat+"."); }; }); }
+});
+
+/* ---------- people (lent / returned) ---------- */
+function renderPeople(){
+  const m=new Map(); const key=s=>norm(s).toLowerCase();
+  ALL.filter(t=>t.lent||t.returned).forEach(t=>{ const k=key(t.lent?t.merchant:(t.retTo[0]?t.retTo[0].merchant:t.merchant)); const g=m.get(k)||{name:t.lent?t.merchant:(t.retTo[0]?t.retTo[0].merchant:t.merchant),lent:0,back:0,last:null}; if(t.lent) g.lent+=t.amount; else g.back+=t.amount; if(!g.last||t.date>g.last) g.last=t.date; m.set(k,g); });
+  const rows=[...m.values()].map(g=>({...g,owe:r3(g.lent-g.back)})).sort((a,b)=>b.owe-a.owe);
+  $("peopleCard").style.display=rows.length?"":"none"; if(!rows.length) return;
+  const totalOwe=rows.reduce((s,r)=>s+Math.max(0,r.owe),0);
+  $("people").innerHTML=(totalOwe?'<div class="msg" style="margin-bottom:6px">Still to come back to you: <b class="num">'+fmtK(totalOwe)+'</b></div>':'')+rows.map(r=>
+    '<div class="mrow"><div class="rank">🤝</div><div class="nm">'+esc(r.name)+'<div style="font-size:12px;color:var(--ink3)">lent '+fmt(r.lent)+' · returned '+fmt(r.back)+(r.last?' · last '+dshort(r.last):'')+'</div></div>'+
+    '<div class="num" style="font-weight:650;text-align:right;color:'+(r.owe>0?'var(--ink)':'var(--good)')+'">'+(r.owe>0?fmt(r.owe)+'<div style="font-size:11px;color:var(--ink3);font-weight:400">owes you</div>':r.owe<0?fmt(-r.owe)+'<div style="font-size:11px;color:var(--ink3);font-weight:400">extra returned</div>':'✓ settled')+'</div></div>').join("");
+}
+
+/* ---------- health check ---------- */
+function balanceGaps(){
+  const groups={};
+  ALL.filter(t=>t.date&&t.balance!=null&&t.balance_type).forEach(t=>{ const k=t.balance_type+"|"+(t.account_last4||"?"); (groups[k]=groups[k]||[]).push(t); });
+  const gaps=[], checked=[];
+  for(const k in groups){ const g=groups[k].slice().sort((a,b)=>a.date-b.date);
+    for(let i=1;i<g.length;i++){ const p=g[i-1], c=g[i];
+      const exp=p.balance+(c.type==="credit"?1:-1)*c.amount; const diff=r3(c.balance-exp);
+      if(Math.abs(diff)<0.001){ checked.push(c); continue; }
+      if(i+1<g.length&&g[i+1].date-c.date<180e3){ const n=g[i+1]; if(Math.abs(n.balance-(p.balance+(n.type==="credit"?1:-1)*n.amount))<0.001){ g[i]=n; g[i+1]=c; i--; continue; } }
+      checked.push(c); gaps.push({p,c,diff}); } }
+  return {gaps,checked};
+}
+function renderHealth(V){
+  const w=V.w; if(!w){ $("healthCard").style.display="none"; return; }
+  const inWin=d=>d&&d>=w.start&&(!w.end||d<w.end);
+  const {gaps,checked}=balanceGaps();
+  const g=gaps.filter(x=>inWin(x.c.date)), nChecks=checked.filter(t=>inWin(t.date)).length;
+  const newFmt=V.inW.filter(t=>t.how==="new format"), nf=NEEDFIX.filter(x=>inWin(x.m.date));
+  const totalMsgs=V.inW.length+nf.length; let h="";
+  if(newFmt.length+nf.length>=3&&(newFmt.length+nf.length)/Math.max(1,totalMsgs)>=0.2){
+    const cnt={}; newFmt.forEach(t=>cnt[t.sender||"?"]=(cnt[t.sender||"?"]||0)+1); nf.forEach(x=>cnt[x.m.sender||"?"]=(cnt[x.m.sender||"?"]||0)+1);
+    const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+    h+='<div class="alert warn"><span class="ic">⚠️</span><span>'+(newFmt.length+nf.length)+' SMS this period were in a format the dashboard didn’t know'+(top&&top!=="?"?' (mostly from '+esc(top)+')':'')+'. The bank may have changed its wording. Check the ones marked “new format” and anything under “Needs your check”.</span></div>';
+  }
+  if(g.length){
+    h+='<div class="msg" style="margin-bottom:6px">Each SMS balance should equal the previous balance ± the amount. These don’t add up:</div>';
+    h+=g.slice(0,6).map(x=>{ const lab=(x.c.balance_type==="available_limit"?"Card":"Account")+(x.c.account_last4?" ••"+esc(x.c.account_last4):"");
+      return '<div class="lrow" style="align-items:flex-start"><span><b>'+lab+'</b> · '+dshort(x.p.date)+' '+hm(x.p.date)+' → '+dshort(x.c.date)+' '+hm(x.c.date)+
+        '<div class="msg">'+(x.diff<0?fmtK(-x.diff)+' went out with no SMS to explain it — a money-out SMS may be missing or misread.':fmtK(x.diff)+' came in with no SMS to explain it — a money-in SMS may be missing.')+'</div></span>'+
+        '<span class="num" style="font-weight:650;color:'+(x.diff<0?'var(--bad)':'var(--good)')+'">'+(x.diff<0?"−":"+")+fmt(Math.abs(x.diff))+'</span></div>'; }).join("");
+    if(g.length>6) h+='<div class="msg" style="margin-top:6px">…and '+(g.length-6)+' more.</div>';
+    h+='<div class="msg" style="margin-top:8px">Missing one? Add it under “Add a missed SMS” at the bottom.</div>';
+  } else if(nChecks){
+    h+='<div class="alert good" style="margin:0"><span class="ic">✅</span><span>All '+nChecks+' balance checks add up — no SMS look missing this period.</span></div>';
+  }
+  $("healthCard").style.display=h?"":"none"; $("health").innerHTML=h;
+}
+
+/* ---------- unrecognised ---------- */
+function catOptions(type,sel){ const list=type==="credit"?creditCategories():debitCategories();
+  return list.map(c=>'<option'+(c===sel?" selected":"")+'>'+esc(c)+'</option>').join(""); }
+function renderUnrec(){
+  $("unrecCard").style.display=(NEEDFIX.length||INCOMPLETE.length)?"":"none";
+  $("ucount").textContent=NEEDFIX.length+" to check";
+  $("unrec").innerHTML=NEEDFIX.map(({m,key})=>{
+    const t=norm(m.text); const guessAmt=(t.match(/(?:KWD|KD)\s*([\d,]+\.\d+)|([\d,]+\.\d+)\s*(?:KWD|KD)/i)||t.match(/([\d,]+\.\d{3})/)||[]);
+    const amt=guessAmt[1]||guessAmt[2]||""; const type=/credit|deposit|received|refund/i.test(t)&&!/debit|purchase|spent|paid/i.test(t)?"credit":"debit";
+    return '<details class="u" data-k="'+esc(key)+'"><summary><span style="font-size:18px">❓</span><div style="min-width:0"><div style="font-weight:600;font-size:14px">'+esc(m.sender)+' · '+dshort(m.date)+' '+hm(m.date)+'</div>'+
+      '<div class="msg" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70vw">'+esc(t.slice(0,90))+'</div></div><span class="chev">›</span></summary>'+
+      '<div class="body"><div class="smsbox">'+esc(t)+'</div>'+
+      '<div class="f2"><label class="f">Type<select class="u-type"><option value="debit"'+(type==="debit"?" selected":"")+'>Money out (debit)</option><option value="credit"'+(type==="credit"?" selected":"")+'>Money in (credit)</option></select></label>'+
+      '<label class="f">Amount (KWD)<input class="u-amt" inputmode="decimal" value="'+esc(amt.replace(/,/g,""))+'"></label></div>'+
+      '<label class="f">Merchant / from<input class="u-mer" placeholder="Copy the name from the SMS if it’s there"></label>'+
+      '<label class="f">Category<select class="u-cat">'+catOptions(type)+'</select></label>'+
+      '<label class="ck"><input type="checkbox" class="u-learn" checked> Learn this format for future SMS from '+esc(m.sender)+'</label>'+
+      '<div class="btns"><button class="btn pri u-save">Save transaction</button><button class="btn u-ign">Not a transaction</button><button class="btn u-teach">✍️ Teach a rule</button></div></div></details>';
+  }).join("");
+  $("incomplete").textContent=INCOMPLETE.length?INCOMPLETE.length+" other message"+(INCOMPLETE.length>1?"s":"")+" not understood but missing a date, sender or text, so they’re left out. Add them again below with all three if they matter.":"";
+}
+$("unrec").addEventListener("change",e=>{ if(e.target.classList.contains("u-type")){ const d=e.target.closest("details"); d.querySelector(".u-cat").innerHTML=catOptions(e.target.value); } });
+$("unrec").addEventListener("click",e=>{
+  const d=e.target.closest("details.u"); if(!d) return; const key=d.dataset.k; const it=NEEDFIX.find(x=>x.key===key); if(!it) return;
+  if(e.target.classList.contains("u-save")){
+    const type=d.querySelector(".u-type").value, amount=num(d.querySelector(".u-amt").value), merchant=norm(d.querySelector(".u-mer").value), category=d.querySelector(".u-cat").value;
+    if(!isFinite(amount)||amount<=0){ alert("Please enter the amount."); return; }
+    S.fixes[key]={type,amount,merchant,category};
+    let learned=false;
+    if(d.querySelector(".u-learn").checked){ const tp=buildTemplate(it.m.text,amount,merchant);
+      if(tp){ S.templates.push({sender:norm(it.m.sender).toLowerCase(),re:tp.re,amtG:tp.amtG,merG:tp.merG,merchant:tp.merG?"":merchant,type,category,created:Date.now(),sample:norm(it.m.text).slice(0,120)}); learned=true; } }
+    saveSettings(); render(); status(learned?"Saved, and learned this SMS format.":"Saved. (Couldn’t find the amount in the text, so the format wasn’t learned.)");
+  }
+  if(e.target.classList.contains("u-teach")){ openTeach({sms:norm(it.m.text),sender:it.m.sender,type:null,merchant:"",category:null}); return; }
+  if(e.target.classList.contains("u-ign")){
+    const similar=confirm("Ignore similar messages from "+it.m.sender+" in future too?\n\nOK = ignore similar · Cancel = only this one");
+    S.ignored[key]=1;
+    if(similar){ const tp=buildTemplate(it.m.text,null,""); if(tp) S.templates.unshift({sender:norm(it.m.sender).toLowerCase(),re:tp.re,ignore:true,created:Date.now(),sample:norm(it.m.text).slice(0,120)}); }
+    saveSettings(); render(); status("Marked as not a transaction.");
+  }
+});
+
+/* ---------- sheet ---------- */
+function openSheet(title,html,mount){ $("sheetT").textContent=title; const ob=$("sheetB"), nb=ob.cloneNode(false); ob.replaceWith(nb); nb.innerHTML=html; $("sheetBg").classList.add("on"); if(mount) mount($("sheetB")); }
+function closeSheet(){ $("sheetBg").classList.remove("on"); }
+$("sheetX").onclick=closeSheet; $("sheetBg").addEventListener("click",e=>{ if(e.target.id==="sheetBg") closeSheet(); });
+
+function openTx(t){
+  const raw=t.rawMerchant, same=ALL.filter(x=>x.type===t.type&&x.rawMerchant.toUpperCase()===raw.toUpperCase()&&x!==t).length;
+  const generic=GENERIC_MERCHANT.test(raw), rememberDefault=t.type==="debit"&&!generic;
+  openSheet(t.type==="credit"?"Money in":"Payment",
+    '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">'+iconHtml(t.category,48)+'<div><div style="font-size:22px;font-weight:700" class="num">'+(t.type==="credit"?"+":"−")+fmtK(t.amount)+'</div>'+
+    '<div class="msg">'+DOW[t.date.getDay()]+', '+dshort(t.date)+' '+t.date.getFullYear()+' · '+hm(t.date)+' · '+esc(t.sender||"")+'</div></div></div>'+
+    '<div class="smsbox">'+esc(t.sms)+'</div>'+
+    '<div class="msg" style="margin:-2px 0 10px"><span class="cdot '+t.conf+'"></span> <b>'+t.conf[0].toUpperCase()+t.conf.slice(1)+' confidence</b> — '+esc(t.confWhy.join(", "))+'. Account: '+esc(acctName(t.acct))+'.'+
+      (t.ruleId?'<br>✍️ Set by your rule: '+describeRule((S.userRules||[]).find(r=>r.id===t.ruleId)||{words:[],action:"category"}):"")+
+      (t.catSrc==="ai"?'<br>🤖 Category chosen by learning from your earlier choices (bank label said “'+esc(t.aiFrom)+'”).':"")+'</div>'+
+    '<label class="f">Merchant name<input id="eName" value="'+esc(t.merchant)+'"></label>'+
+    '<label class="f">Category<select id="eCat">'+catOptions(t.type,t.category)+'</select></label>'+
+    (()=>{ const rs=(S.userRules||[]).filter(r=>r.action==="category"&&(r.type==="any"||r.type===t.type)); if(!rs.length) return "";
+      const cur=(S.txOverrides[t.key]||{}).ruleId||"";
+      return '<label class="f">…or use one of your rules<select id="eRule"><option value="">— no rule —</option>'+rs.map(r=>'<option value="'+esc(r.id)+'"'+(r.id===cur?" selected":"")+'>'+esc(r.words.join(" + "))+' → '+esc(r.category)+(r.name?' · '+esc(r.name):'')+'</option>').join("")+'</select></label>'; })()+
+    (t.type==="credit"&&!t.salary&&!t.cardPay?(()=>{ const loans=ALL.filter(l=>l.lent&&(l.spendAmt>0.0005||S.links[t.key]===l.key)).sort((a,b)=>b.date-a.date);
+      if(!loans.length) return "";
+      return '<label class="f">🔗 Is this money given back for something you lent?<select id="eLink"><option value="">— not linked —</option>'+loans.map(l=>'<option value="'+esc(l.key)+'"'+(S.links[t.key]===l.key?" selected":"")+'>'+esc(l.merchant)+' · '+dshort(l.date)+' · lent '+fmt(l.amount)+(l.spendAmt>0.0005?' (open '+fmt(l.spendAmt)+')':' (settled)')+'</option>').join("")+'</select></label>'; })():"")+
+    (t.lent?'<div class="msg" style="margin:-4px 0 10px">🤝 Returned so far: <b>'+fmt(t.lentBack)+'</b> of '+fmt(t.amount)+(t.spendAmt>0.0005?' · still counted as spent: <b>'+fmt(t.spendAmt)+'</b>':' · ✓ fully returned — not counted as spending')+'</div>':"")+
+    (t.returned?'<div class="msg" style="margin:-4px 0 10px">🤝 '+(t.retTo.length?'Settles money lent to '+esc(t.retTo.map(l=>l.merchant+" ("+dshort(l.date)+")").join(", "))+(t.retLeft>0.0005?' · '+fmt(t.retLeft)+' extra counted as money in':'')+' — not counted as money in.':'Not matched to any money you lent yet — pick it above.')+'</div>':"")+
+    '<div class="msg" id="eHint" style="margin:-4px 0 8px"></div>'+
+    '<div style="border:1px solid var(--line);border-radius:12px;padding:6px 10px;margin-bottom:6px">'+
+    '<label class="ck" style="margin:4px 0"><input type="radio" name="eScope" value="one"'+(rememberDefault?'':' checked')+'> Only this transaction</label>'+
+    '<label class="ck" style="margin:4px 0"><input type="radio" name="eScope" value="all"'+(rememberDefault?' checked':'')+'> This and '+(same?'the other <b>'+same+'</b> ':'all future ')+(t.type==="credit"?'money-in':'payment')+' SMS named “'+esc(raw)+'”</label>'+
+    (generic?'<div class="msg" style="color:#7a5000">⚠ “'+esc(raw)+'” is a general bank label used for many different people or shops, so “Only this transaction” is safer.</div>':'')+
+    '</div>'+
+    '<div class="btns"><button class="btn pri" id="eSave">Save</button><button class="btn" id="eTeach">✍️ Teach a rule</button>'+(S.confirmed[t.key]?'':'<button class="btn" id="eOk">✓ Looks right</button>')+'<button class="btn danger" id="eHide">Hide this SMS</button></div>'+
+    (t.how!=="auto"?'<div class="btns"><button class="btn sm" id="eUnfix">Undo my correction of this SMS</button></div>':"")+
+    (t.own&&t.pair?'<div class="msg" style="margin-top:10px">🔁 Matched with '+(t.pair.type==="credit"?"+":"−")+fmtK(t.pair.amount)+' on ••'+esc(t.pair.account_last4||"")+' at '+hm(t.pair.date)+' — treated as moving your own money. If it isn’t, change the category.</div>':""),
+    b=>{
+      const hint=()=>{ const c=$("eCat").value; $("eHint").textContent=isLent(c)?"Put the friend’s name as the merchant name — the People list then tracks what they still owe you.":isReturned(c)?"Put the friend’s name as the merchant name (same spelling as when you lent) so it’s matched against what they owe.":c===OWN?"Not counted as spent or received.":""; };
+      $("eCat").onchange=hint; hint();
+      const er=$("eRule"); if(er) er.onchange=()=>{ const r=(S.userRules||[]).find(x=>x.id===er.value); if(r){ $("eCat").value=r.category; if(r.name) $("eName").value=r.name; hint(); } };
+      const el=$("eLink"); if(el) el.onchange=()=>{ const l=ALL.find(x=>x.key===el.value); if(l){ $("eCat").value=creditCategories().find(c=>isReturned(c))||"Returned by friends"; $("eName").value=l.merchant; b.querySelector("input[name=eScope][value=one]").checked=true; hint(); } };
+      $("eSave").onclick=()=>{ const name=norm($("eName").value)||raw, cat=$("eCat").value, all=b.querySelector("input[name=eScope]:checked").value==="all";
+        if(el){ if(el.value) S.links[t.key]=el.value; else delete S.links[t.key]; }
+        if(er&&er.value){ S.txOverrides[t.key]={ruleId:er.value}; saveSettings(); closeSheet(); render(); status("This transaction now follows your rule."); return; }
+        if(all){ S.merchants[raw.toUpperCase()]={name:name===raw?"":name,category:cat,type:t.type}; delete S.txOverrides[t.key]; }
+        else S.txOverrides[t.key]={name:name===raw?"":name,category:cat};
+        saveSettings(); closeSheet(); render(); status(all?"Saved for "+(same+1)+" “"+raw+"” "+(t.type==="credit"?"money-in":"payment")+" SMS and future ones.":"Saved for this transaction only.");
+      };
+      $("eTeach").onclick=()=>openTeach({sms:t.sms,sender:t.sender,type:t.type,merchant:t.rawMerchant,category:t.category});
+      const ok=$("eOk"); if(ok) ok.onclick=()=>{ S.confirmed[t.key]=1; learnFormat(t); if(t.catSrc!=="you") S.txOverrides[t.key]=Object.assign({},S.txOverrides[t.key]||{},{category:t.category}); saveSettings(); closeSheet(); render(); status("Confirmed — it will learn from this."); };
+      $("eHide").onclick=()=>{ if(!confirm("Hide this SMS from all totals? You can bring it back from Settings → Hidden.")) return; S.ignored[t.key]=1; saveSettings(); closeSheet(); render(); };
+      const u=$("eUnfix"); if(u) u.onclick=()=>{ delete S.fixes[t.key]; saveSettings(); closeSheet(); render(); };
+    });
+}
+function openBudgets(){
+  const cats=debitCategories().filter(c=>!excludedCats().has(c));
+  openSheet("Monthly budgets",
+    '<div class="msg" style="margin-bottom:10px">Budgets apply to every salary month. Leave a category empty for no limit. You get an amber warning at 80% and red when over.</div>'+
+    '<label class="f">Total monthly budget (KWD)<input id="bTotal" inputmode="decimal" value="'+(+S.budgets.total||"")+'" placeholder="e.g. 450"></label>'+
+    '<div class="sec"><h3>Per category</h3>'+cats.map(c=>'<div class="brow"><span>'+catIcon(c)+'</span><span>'+esc(c)+'</span><input inputmode="decimal" data-c="'+esc(c)+'" value="'+(+S.budgets.cats[c]||"")+'" placeholder="—"></div>').join("")+
+    '<div class="msg" id="bSum" style="margin-top:6px"></div></div>'+
+    '<div class="btns"><button class="btn pri" id="bSave">Save budgets</button></div>',
+    b=>{ const upd=()=>{ let s=0; b.querySelectorAll("input[data-c]").forEach(i=>s+=num(i.value)||0); $("bSum").textContent=s?"Categories add up to "+fmtK(s):""; };
+      b.addEventListener("input",upd); upd();
+      $("bSave").onclick=()=>{ S.budgets.total=num($("bTotal").value)||0; const cs={}; b.querySelectorAll("input[data-c]").forEach(i=>{ const v=num(i.value); if(v>0) cs[i.dataset.c]=v; });
+        S.budgets.cats=cs; saveSettings(); closeSheet(); render(); status("Budgets saved."); }; });
+}
+$("editBudgets").onclick=openBudgets;
+
+function learnedMerchantsHtml(ml){
+  // grouped by category, A–Z inside each group, so a long list stays easy to scan
+  const groups=new Map();
+  ml.slice().sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0])).forEach(([k,v])=>{ const g=v.category||"(name only)"; if(!groups.has(g)) groups.set(g,[]); groups.get(g).push([k,v]); });
+  return [...groups.entries()].sort((a,b)=>b[1].length-a[1].length).map(([g,list])=>
+    '<details class="plain" style="margin:6px 0;border:1px solid var(--line);border-radius:12px;padding:8px 10px"><summary style="font-size:14px">'+catIcon(g)+' '+esc(g)+' <span class="msg">('+list.length+')</span></summary>'+
+    list.map(([k,v])=>'<div class="lrow"><span>'+(v.type==="credit"?"⬇︎ ":"⬆︎ ")+'<b>'+esc(v.name||k)+'</b>'+(v.name&&v.name!==k?' <span class="msg">('+esc(k)+')</span>':'')+
+      '<div class="msg">'+(v.type==="credit"?"money in":"payments")+' · affects '+ALL.filter(t=>t.type===(v.type||"debit")&&t.rawMerchant.toUpperCase()===k).length+(GENERIC_MERCHANT.test(k)?(v.type?' · ⚠ general bank label':' · ⏸ paused — old rule that renamed every “'+esc(k)+'”; remove it'):'')+'</div></span><button class="x" data-m="'+esc(k)+'">Remove</button></div>').join("")+'</details>').join("");
+}
+function openSettings(){
+  const ml=Object.entries(S.merchants), tl=S.templates, hid=Object.keys(S.ignored);
+  openSheet("Settings",
+    '<h3 style="margin:0 0 8px;font-size:14px">Data</h3>'+
+    '<div class="btns" style="margin-top:0"><button class="btn" id="sLoad">Load SMS log files</button><button class="btn" id="sBudget">Budgets</button></div>'+
+    '<div class="sec"><h3>☁️ iCloud sync</h3>'+(HAS_FS?
+      '<div class="msg">'+(FOLDER?'Connected to <b>'+esc(FOLDER.name)+'</b>. SMS files are read when you open the dashboard and every 5 minutes; your changes are saved to <b>expense_data.json</b> automatically.':'Pick the iCloud Drive folder that holds Total.txt (usually <b>iCloud Drive › Shortcuts</b>). The dashboard will then read your SMS and save your changes there by itself.')+'</div>'+
+      '<label class="f" style="margin-top:8px">SMS file(s) it reads from that folder<input id="sSmsFiles" value="'+esc(S.smsFiles||"Total.txt")+'"></label>'+
+      '<div class="btns"><button class="btn pri" id="sFolder">'+(FOLDER?'Sync now':'💻 Choose iCloud folder')+'</button></div>'
+      :'<div class="msg"><b>Get the latest:</b> tap <b>📥 Update</b> at the top and pick <b>Total.txt</b> (new SMS) and <b>expense_data.json</b> (changes made on the laptop) from iCloud Drive › Shortcuts.<br><b>Send your changes:</b> tap <b>☁️ Save to iCloud</b> — it hands your data to the <b>Save Expenses</b> shortcut, which replaces expense_data.json in iCloud.</div><div class="btns"><button class="btn pri" id="sCloud">☁️ Save to iCloud</button></div>')+'</div>'+
+    '<div class="sec"><h3>Save</h3><div class="msg">One file, <b>expense_data.json</b>, holds everything: your budgets, corrections and learned formats, plus the summary of every month. Save it to your Expenses folder and choose <b>Replace</b> each time.</div>'+
+    '<div class="btns"><button class="btn pri" id="sSaveAll">💾 Save</button></div>'+
+    '<div class="msg" style="margin-top:8px">Settings missing? <button class="linkbtn" id="sRestore">📥 Load latest from iCloud (expense_data.json)</button></div></div>'+
+    '<div class="sec"><h3>Accounts &amp; card</h3><div class="msg" style="margin-bottom:6px">Give each one a name you recognise.</div>'+accountList().map(id=>'<div class="brow" style="grid-template-columns:30px 1fr"><span>'+(id.startsWith("card")?"💳":"🏦")+'</span><input data-acc="'+esc(id)+'" value="'+esc((S.accounts[id]&&S.accounts[id].name)||"")+'" placeholder="'+esc(acctName(id))+'" style="text-align:left"></div>').join("")+'<div class="btns"><button class="btn sm pri" id="sAccSave">Save names</button></div></div>'+
+    '<div class="sec"><h3>Financial year</h3><label class="f">Starts in<select id="sFy">'+MONL.map((m,i)=>'<option value="'+(i+1)+'"'+((+S.fyStart||4)===i+1?' selected':'')+'>'+m+'</option>').join("")+'</select></label></div>'+
+    '<div class="sec"><details class="plain"'+((S.userRules||[]).length?' open':'')+'><summary>✍️ Your rules ('+(S.userRules||[]).length+')</summary><div style="margin-top:8px">'+((S.userRules||[]).length?S.userRules.map(r=>{ const c=Object.assign({},r); c._res=r.words.map(w=>new RegExp("(^|[^A-Z0-9])"+escRe(norm(w).toUpperCase()).replace(/\s+/g,"\\s+")+"($|[^A-Z0-9])")); return '<div class="lrow"><span style="min-width:0">'+describeRule(r)+'<div class="msg">matches '+rulePreview(c).length+' SMS</div></span><span style="flex:none"><button class="x" data-ure="'+esc(r.id)+'" style="color:var(--accent)">Edit</button> <button class="x" data-ur="'+esc(r.id)+'">Delete</button></span></div>'; }).join(""):'<div class="msg">None yet. Open any transaction and tap ✍️ Teach a rule.</div>')+'</div></details></div>'+
+    '<div class="sec"><details class="plain"><summary>Learned merchants ('+ml.length+')</summary><div style="margin-top:8px">'+(ml.length>0?'<input id="sMq" type="search" placeholder="Search learned merchants" style="margin-bottom:6px">':'')+'<div id="sMl">'+
+(ml.length?learnedMerchantsHtml(ml):'<div class="msg">Tap any transaction to rename it or change its category.</div>')+'</div></div></details></div>'+
+    '<div class="sec"><details class="plain"><summary>Learned SMS formats ('+tl.length+')</summary><div style="margin-top:8px">'+(tl.length?tl.map((t,i)=>'<div class="lrow"><span style="min-width:0"><b>'+(t.ignore?"Ignore":esc(t.category||t.type))+'</b> · '+esc(t.sender||"any sender")+'<div class="msg" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.sample||"")+'</div></span><button class="x" data-t="'+i+'">Remove</button></div>').join(""):'<div class="msg">None yet.</div>')+'</div></details></div>'+
+    '<div class="sec"><h3>Hidden SMS ('+hid.length+')</h3>'+(hid.length?'<button class="btn sm" id="sUnhide">Show all hidden SMS again</button>':'<div class="msg">None.</div>')+'</div>'+
+    '<div class="sec"><details class="plain"><summary>Category keyword rules</summary><div class="msg" style="margin:8px 0">This is the built-in starting list — it doesn’t change by itself. Your fixes are remembered separately (✍️ your rules, learned merchants, and the 🤖 smart engine) and always win over these keywords. One per line: <code>Category: KEYWORD, KEYWORD</code>. <b>+</b> at the start = money in. <b>*</b> after the name = not counted as spending (card bills, sent home). A category with “salary” in its name starts a new month.</div>'+
+    '<textarea id="sRules" style="min-height:220px">'+esc(rulesText())+'</textarea><div class="btns"><button class="btn pri" id="sApply">Apply rules</button><button class="btn" id="sReset">Reset to default</button></div></details></div>'+
+    '<div class="sec"><details class="plain"><summary>Version '+APP_VERSION+' · '+APP_DATE+'</summary><div style="margin-top:8px">'+
+      CHANGELOG.map(c=>'<div class="lrow" style="align-items:flex-start"><b style="flex:none;width:34px">'+c[0]+'</b><span style="flex:1">'+esc(c[2])+'<div class="msg">'+c[1]+'</div></span></div>').join("")+'</div></details></div>'+
+    '<div class="sec"><button class="btn danger sm" id="sWipe">Clear all my corrections &amp; budgets</button></div>',
+    b=>{
+      $("sLoad").onclick=()=>$("file").click(); $("sBudget").onclick=openBudgets;
+      $("sSaveAll").onclick=saveAll;
+      const smf=$("sSmsFiles"); if(smf) smf.onchange=()=>{ S.smsFiles=norm(smf.value)||"Total.txt"; saveSettings(); if(FOLDER) syncFromFolder(); status("Reading: "+S.smsFiles); };
+      const sf=$("sFolder"); if(sf) sf.onclick=async()=>{ if(FOLDER) await writeFolder("manual"); else await connectFolder(true); closeSheet(); };
+      const sc=$("sCloud"); if(sc) sc.onclick=saveToICloud;
+      b.querySelectorAll("[data-ure]").forEach(x=>x.onclick=()=>{ const r=S.userRules.find(y=>y.id===x.dataset.ure); if(!r) return; const c=Object.assign({},r,{_res:r.words.map(w=>new RegExp("(^|[^A-Z0-9])"+escRe(norm(w).toUpperCase()).replace(/\s+/g,"\\s+")+"($|[^A-Z0-9])"))});
+        const h=rulePreview(c)[0]; openTeach({sms:h?norm(h.m.text):r.words.join(" "),sender:h?h.m.sender:"",type:r.type==="any"?null:r.type,merchant:"",category:r.category},r); });
+      b.querySelectorAll("[data-ur]").forEach(x=>x.onclick=()=>{ if(!confirm("Delete this rule? Messages it matched go back to automatic categories.")) return; S.userRules=S.userRules.filter(r=>r.id!==x.dataset.ur); saveSettings(); render(); openSettings(); });
+      $("sAccSave").onclick=()=>{ b.querySelectorAll("input[data-acc]").forEach(i=>{ const v=norm(i.value); if(v) S.accounts[i.dataset.acc]={name:v}; else delete S.accounts[i.dataset.acc]; }); saveSettings(); render(); status("Names saved."); };
+      $("sFy").onchange=e=>{ S.fyStart=+e.target.value; saveSettings(); fySel=null; render(); status("Financial year now starts in "+MONL[S.fyStart-1]+"."); };
+      const mq=$("sMq"); if(mq) mq.oninput=()=>{ const q=mq.value.toLowerCase(); $("sMl").querySelectorAll(".lrow").forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q)?"":"none");
+        $("sMl").querySelectorAll("details").forEach(d=>{ const any=[...d.querySelectorAll(".lrow")].some(r=>r.style.display!=="none"); d.style.display=any?"":"none"; d.open=!!q&&any; }); };
+      $("sRestore").onclick=()=>$("setFile").click();
+      b.querySelectorAll("[data-m]").forEach(x=>x.onclick=()=>{ delete S.merchants[x.dataset.m]; saveSettings(); render(); openSettings(); });
+      b.querySelectorAll("[data-t]").forEach(x=>x.onclick=()=>{ S.templates.splice(+x.dataset.t,1); saveSettings(); render(); openSettings(); });
+      const uh=$("sUnhide"); if(uh) uh.onclick=()=>{ S.ignored={}; saveSettings(); render(); openSettings(); };
+      $("sApply").onclick=()=>{ const v=$("sRules").value; S.rules=v.trim()===DEFAULT_RULES.trim()?null:v; rules=compileRules(rulesText()); saveSettings(); render(); status("Rules applied."); };
+      $("sReset").onclick=()=>{ S.rules=null; $("sRules").value=DEFAULT_RULES; rules=compileRules(rulesText()); saveSettings(); render(); };
+      $("sWipe").onclick=()=>{ if(!confirm("Remove all corrections, learned merchants & formats, budgets, hidden and added SMS? This can’t be undone unless you saved a settings file.")) return;
+        const r=S.rules; S=blank(); S.rules=r; saveSettings(); render(); closeSheet(); };
+    });
+}
+$("openSettings").onclick=openSettings;
+
+/* ---------- add messages ---------- */
+function addExtra(list){ let n=0; list.forEach(m=>{ if(!norm(m.text)) return; S.extraMessages.push({date:m.date?m.date.toISOString():null,sender:m.sender||"",text:norm(m.text)}); n++; }); saveSettings(); return n; }
+(function(){ const d=new Date(); $("addDate").value=ymd(d)+"T"+hm(d); })();
+$("addOne").onclick=()=>{ const ds=$("addDate").value, snd=norm($("addSender").value), body=norm($("addBody").value);
+  if(!ds||!snd||!body){ alert("Please fill in date, sender and message."); return; }
+  addExtra([{date:new Date(ds),sender:snd,text:body}]); $("addBody").value=""; render();
+  const k=msgKey({date:new Date(ds),text:body}); const ok=ALL.some(t=>t.key===k);
+  status(ok?"Added and recognised.":"Added. It wasn’t recognised — check it under “Needs your check”."); };
+$("addPaste").onclick=()=>{ const n=addExtra(textToMessages($("paste").value)); $("paste").value=""; render(); status("Added "+n+" messages."); };
+
+/* ---------- files & export ---------- */
+function status(t){ $("status").textContent=t; clearTimeout(status.t); status.t=setTimeout(()=>{$("status").textContent="";},6000); }
+/* one loader for every kind of file: SMS logs, expense_data.json, old settings or report files */
+function isSettingsObj(o){ return o&&typeof o==="object"&&!Array.isArray(o)&&(o.budgets||o.merchants||o.templates||o.fixes||o.txOverrides||o.extraMessages||o.userRules); }
+function loadAnyText(text){
+  const res={settings:false,msgs:0,kind:"log"}; let o=null;
+  try{ o=JSON.parse(String(text).replace(/^\uFEFF/,"")); }catch(e){}
+  if(o&&typeof o==="object"&&!Array.isArray(o)){
+    const st=isSettingsObj(o.settings)?o.settings:isSettingsObj(o)?o:null;
+    if(st){ S=mergeSettings(S,normSettings(st)); SNAP=flatSettings(S); rules=compileRules(rulesText()); store.set("exp_settings_v2",JSON.stringify(S)); store.set("exp_saved_at",String(S.updated||0)); res.settings=true; }
+    const rows=[]; (o.months||[]).forEach(m=>(m.transactions||[]).forEach(t=>rows.push(t)));
+    (o.transactions||[]).forEach(t=>rows.push(t)); (o.needs_check||[]).forEach(t=>rows.push(t)); (o.unparsed_messages||[]).forEach(t=>rows.push(t));
+    const ms=rows.filter(t=>t&&typeof t.sms==="string"&&t.sms.trim()).map(t=>({date:parseDate(t.date),sender:t.sender||"",text:t.sms}));
+    if(ms.length){ logMessages=logMessages.concat(ms); res.msgs=ms.length; }
+    if(res.settings||res.msgs){ res.kind="backup"; return res; }
+  }
+  const ms=textToMessages(text); logMessages=logMessages.concat(ms); res.msgs=ms.length; return res;
+}
+function cacheLog(){ try{ const seen=new Set(); const out=[];
+  logMessages.forEach(m=>{ const k=msgKey(m); if(seen.has(k)) return; seen.add(k); out.push({d:m.date?m.date.toISOString():null,s:m.sender||"",t:m.text}); });
+  store.set("exp_log_cache",JSON.stringify(out)); }catch(e){} }
+async function onFiles(e){
+  const files=[...e.target.files]; e.target.value=""; if(!files.length) return;
+  const before=allMessages().length; let restored=false, msgs=0, bad=[];
+  for(const f of files){ let r; try{ r=loadAnyText(await f.text()); }catch(err){ bad.push(f.name); continue; }
+    if(r.settings) restored=true; msgs+=r.msgs; if(!r.settings&&!r.msgs) bad.push(f.name); }
+  cacheLog(); view=0; closeSheet(); render();
+  const added=allMessages().length-before, parts=[];
+  if(restored){ const nb=+S.budgets.total||0; parts.push("settings restored ("+(nb?"budget "+fmtK(nb)+", ":"")+Object.keys(S.merchants).length+" learned merchants, "+S.templates.length+" learned formats, "+Object.keys(S.fixes).length+" corrections)"); }
+  if(msgs) parts.push(added+" new SMS added"+(msgs>added?" ("+(msgs-added)+" were already here)":""));
+  if(bad.length) parts.push("couldn’t find any dashboard data in "+bad.join(", "));
+  status(parts.length?parts.join(" · ").replace(/^./,c=>c.toUpperCase())+".":"Nothing found in that file.");
+}
+$("file").addEventListener("change",onFiles);
+$("setFile").addEventListener("change",onFiles);
+function reportName(){ const w=lastView&&lastView.w; return "expenses_"+(w?ymd(w.start):"all")+".json"; }
+function buildReport(Vin){
+  const V=Vin||lastView||computeView(null), w=V.w;
+  const by=g=>{ const m=new Map(); V.spend.forEach(t=>{ const k=g(t); m.set(k,(m.get(k)||0)+t.spendAmt); }); return [...m].map(([k,a])=>({name:k,amount:r3(a)})).sort((a,b)=>b.amount-a.amount); };
+  return {report:{title:"Expense summary from bank SMS",generated_at:new Date().toISOString(),period:w?w.label:null,
+      from:w?ymd(w.start):null,to:w&&w.end?ymd(new Date(w.end.getTime()-1)):null,currency:CUR,
+      note:"Month starts on the salary credit. Spending excludes categories marked * (card bill payments, sent home)."},
+    summary:{opening_balance:V.opening,current_balance:V.current,total_spent:r3(V.spent),sent_home:r3(V.sentAmt),loan_paid:r3(V.loanAmt),lent:r3(V.lentAmt),returned:r3(V.returnedAmt),salary:r3(V.salaryAmt),other_money_in:r3(V.otherInAmt),
+      budget:+S.budgets.total||null,budget_used_pct:S.budgets.total?Math.round(V.spent/S.budgets.total*1000)/10:null,days:V.total,days_elapsed:V.elapsed,
+      by_category:by(t=>t.category).map(x=>Object.assign(x,{budget:+S.budgets.cats[x.name]||null})),top_merchants:by(t=>t.merchant).slice(0,10)},
+    transactions:V.inW.map(t=>({date:t.date.toISOString(),type:t.type,amount:t.amount,currency:t.currency,merchant:t.merchant,category:t.category,
+      counts_as_spending:t.counts,sent_home:t.remit,own_transfer:!!t.own,source:t.source,account_last4:t.account_last4,balance:t.balance,balance_type:t.balance_type,how_read:t.how,sender:t.sender,sms:t.sms})),
+    needs_check:NEEDFIX.map(({m})=>({date:m.date?m.date.toISOString():null,sender:m.sender,sms:norm(m.text)}))};
+}
+function buildAll(){
+  const months=CYCLES.map(c=>{ const r=buildReport(computeView(c)); return {period:r.report.period,from:r.report.from,to:r.report.to,summary:r.summary,transactions:r.transactions}; });
+  return {type:"expense_data",version:2,app_version:APP_VERSION,saved_at:new Date().toISOString(),currency:CUR,
+    note:"Settings + every salary month. Month starts on the salary credit. Spending excludes loan, sent home and card bill payments.",
+    settings:S,months,needs_check:NEEDFIX.map(({m})=>({date:m.date?m.date.toISOString():null,sender:m.sender,sms:norm(m.text)}))};
+}
+async function saveAll(){
+  const ok=await shareJSON(JSON.stringify(buildAll(),null,2),"expense_data.json");
+  if(ok){ store.set("exp_saved_at",String(S.updated||Date.now())); renderSaveNudge(); }
+}
+function renderSaveNudge(){
+  const saved=+(store.get("exp_saved_at")||0), dirty=S.updated&&S.updated>saved;
+  const show=dirty&&!FOLDER;
+  $("saveNudge").innerHTML=show?'<div class="alert warn" style="align-items:center;flex-wrap:wrap"><span class="ic">💾</span><span style="flex:1;min-width:150px">You have changes that aren’t saved to iCloud yet.</span><button class="btn sm pri" id="nudgeCloud">☁️ Save to iCloud</button><button class="btn sm" id="nudgeSave">Save file</button></div>':"";
+  const b=$("nudgeSave"); if(b) b.onclick=saveAll; const c=$("nudgeCloud"); if(c) c.onclick=saveToICloud;
+}
+async function shareJSON(json,name){
+  try{ const file=new File([json],name,{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:name}); status("Saved "+name+". If asked, choose “Save to Files” → Replace."); return true; } }
+  catch(e){ if(e&&e.name==="AbortError") return false; }
+  try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([json],{type:"application/json"})); a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    status("Downloading "+name+"."); return true; }catch(e){}
+  try{ await navigator.clipboard.writeText(json); status("This viewer blocks saving, so the data was copied — paste it into a file named "+name+"."); return true; }
+  catch(e){ status("This viewer blocks saving and copying. Open the dashboard in Safari and tap Save again."); return false; }
+}
+
+/* ---------- iCloud folder sync ---------- */
+const smsFileNames=()=>String(S.smsFiles||"Total.txt").split(",").map(x=>norm(x).toLowerCase()).filter(Boolean);
+let FOLDER=null, FOLDER_MSGS=[], folderTimer=null, folderSaveT=null, lastFolderSync=0;
+const HAS_FS=typeof window.showDirectoryPicker==="function";
+const idb={ db:null,
+  open(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open("expenses-sync",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(this.db=r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); },
+  async get(k){ const db=this.db||await this.open(); return new Promise(res=>{ const q=db.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }); },
+  async set(k,v){ const db=this.db||await this.open(); return new Promise(res=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=()=>res(true); t.onerror=()=>res(false); }); } };
+async function readFolder(){
+  const msgs=[]; let fileSettings=null;
+  for await (const h of FOLDER.values()){
+    if(h.kind!=="file") continue; const n=h.name.toLowerCase();
+    if(n==="expense_data.json"){ try{ const o=JSON.parse(await (await h.getFile()).text()); fileSettings=o&&o.settings?o.settings:o; }catch(e){} continue; }
+    if(smsFileNames().includes(n)){ try{ textToMessages(await (await h.getFile()).text()).forEach(m=>msgs.push(m)); }catch(e){} } }
+  return {msgs,fileSettings};
+}
+async function writeFolder(reason){
+  if(!FOLDER) return false;
+  try{
+    const {fileSettings}=await readFolder();            // pick up changes made on the other device first
+    if(fileSettings){ S=mergeSettings(S,normSettings(fileSettings)); SNAP=flatSettings(S); rules=compileRules(rulesText()); store.set("exp_settings_v2",JSON.stringify(S)); }
+    processAll();
+    const fh=await FOLDER.getFileHandle("expense_data.json",{create:true}), w=await fh.createWritable();
+    await w.write(JSON.stringify(buildAll(),null,2)); await w.close();
+    store.set("exp_saved_at",String(S.updated||Date.now())); lastFolderSync=Date.now(); showSync(); renderSaveNudge(); return true;
+  }catch(e){ showSync("⚠️ Couldn’t save to the folder — tap to reconnect"); return false; }
+}
+async function syncFromFolder(){
+  if(!FOLDER) return;
+  try{
+    const {msgs,fileSettings}=await readFolder(); FOLDER_MSGS=msgs;
+    let changed=false;
+    if(fileSettings){ const before=JSON.stringify(flatSettings(S)); S=mergeSettings(S,normSettings(fileSettings)); SNAP=flatSettings(S);
+      changed=JSON.stringify(SNAP)!==JSON.stringify(flatSettings(normSettings(fileSettings))); rules=compileRules(rulesText()); store.set("exp_settings_v2",JSON.stringify(S)); if(JSON.stringify(SNAP)!==before) render(); }
+    render(); lastFolderSync=Date.now(); showSync();
+    if(changed||!fileSettings) writeFolder("sync");          // this device had something the file didn’t
+  }catch(e){ showSync("⚠️ Couldn’t read the folder — tap to reconnect"); }
+}
+async function connectFolder(fromClick){
+  try{
+    let h=await idb.get("folder").catch(()=>null);
+    if(h&&fromClick){ const p=await h.requestPermission({mode:"readwrite"}); if(p!=="granted") h=null; }
+    if(!h&&fromClick){ h=await window.showDirectoryPicker({id:"expenses",mode:"readwrite"}); await idb.set("folder",h); }
+    if(!h) return false;
+    if(!fromClick&&(await h.queryPermission({mode:"readwrite"}))!=="granted"){ showSync("🔌 Tap to reconnect your iCloud folder"); return false; }
+    FOLDER=h; await syncFromFolder();
+    clearInterval(folderTimer); folderTimer=setInterval(()=>{ syncFromFolder(); },5*60e3);
+    return true;
+  }catch(e){ if(e&&e.name!=="AbortError") showSync("⚠️ "+(e.message||"Folder not available")); return false; }
+}
+window.__expConnect=async h=>{ FOLDER=h; await syncFromFolder(); };   // used by the test set
+function onSettingsChanged(){ if(!FOLDER) return; clearTimeout(folderSaveT); folderSaveT=setTimeout(()=>writeFolder("change"),2000); }
+document.addEventListener("visibilitychange",()=>{ if(!FOLDER) return; if(document.visibilityState==="hidden"){ clearTimeout(folderSaveT); writeFolder("close"); } else if(Date.now()-lastFolderSync>60e3) syncFromFolder(); });
+function showSync(msg){ const el=$("syncChip"); if(!el) return;
+  if(!HAS_FS){ el.style.display="none"; return; }
+  el.style.display="";
+  el.textContent=msg||(FOLDER?"☁️ Synced "+hm(new Date(lastFolderSync||Date.now())):"💻 Connect iCloud folder");
+  el.classList.toggle("warn",!!msg||!FOLDER); }
+/* iPhone: hand the data to the “Save Expenses” shortcut, which replaces expense_data.json in iCloud */
+async function saveToICloud(){
+  const json=JSON.stringify(buildAll());
+  try{ await navigator.clipboard.writeText(json); }catch(e){ status("Copy was blocked — use 💾 Save instead."); return; }
+  store.set("exp_saved_at",String(S.updated||Date.now())); renderSaveNudge();
+  const url="shortcuts://run-shortcut?name="+encodeURIComponent("Save Expenses");
+  try{ (window.top&&window.top!==window?window.top:window).location.href=url; }catch(e){ location.href=url; }
+}
+/* ---------- start ---------- */
+(function(){
+  const el=$("embedded"), raw=el.textContent.trim(), U="_"+"_", f=el.dataset.from, t=el.dataset.to;
+  if(f&&!f.startsWith(U)) $("from").value=f;
+  if(t&&!t.startsWith(U)) $("to").value=t;
+  // new SMS handed over by the iPhone app (Open Expenses shortcut → link → this page); they never leave the phone
+  try{ let inc=store.get("exp_incoming")||""; store.set("exp_incoming","");
+    const h=location.hash||""; if(!inc&&h.startsWith("#exp=")){ inc=decodeURIComponent(h.slice(5)); try{history.replaceState(null,"",location.pathname+location.search);}catch(e){} }
+    if(inc&&inc.trim()){ const ms=textToMessages(inc); const before=new Set(logMessages.concat(JSON.parse(store.get("exp_log_cache")||"[]").map(m=>({date:m.d?new Date(m.d):null,text:m.t}))).map(msgKey));
+      const fresh=ms.filter(m=>!before.has(msgKey(m))); logMessages=logMessages.concat(ms); setTimeout(()=>status(fresh.length?"📩 "+fresh.length+" new SMS added.":"No new SMS since last time."),50); } }catch(e){}
+  if(raw&&!raw.startsWith(U)){
+    try{ logMessages=textToMessages(embText(raw)); status("Loaded "+logMessages.length+" messages from your iPhone log."); }
+    catch(e){ status("Couldn’t read the embedded log: "+e.message); }
+  }
+  try{ const c=JSON.parse(store.get("exp_log_cache")||"[]"); if(Array.isArray(c)&&c.length){
+    logMessages=logMessages.concat(c.map(m=>({date:m.d?new Date(m.d):null,sender:m.s||"",text:m.t})));
+    if(!raw||raw.startsWith(U)) status("Showing "+c.length+" SMS saved on this device. Load your SMS files from ⚙︎ for the latest."); } }catch(e){}
+  cacheLog();
+})();
+render();
+if(!HAS_FS){ $("updChip").style.display=""; $("updChip").onclick=()=>{ status("Pick Total.txt and expense_data.json from iCloud Drive › Shortcuts (tap Select to choose both)."); $("file").click(); }; }
+$("syncChip").onclick=async()=>{ if(FOLDER) await syncFromFolder(); else await connectFolder(true); };
+showSync(); if(HAS_FS) connectFolder(false);
+})();
+</script>
+</body>
+</html>
