@@ -1,7 +1,7 @@
 // Offline helper for the Money app (v2).
 // It keeps a copy of this app's own files on the phone so the app opens without internet.
 // It never sends your data anywhere: it only downloads these files from GitHub.
-const CACHE = "money-v2";
+const CACHE = "money-v3";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

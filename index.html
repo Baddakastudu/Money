@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<!-- Money app v2.5 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
+<!-- Money app v2.8 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Money</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -111,6 +111,36 @@ main{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) calc(64
 .toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;
   background:rgba(30,30,32,.92);color:#fff;font-size:14px;padding:10px 16px;border-radius:12px;max-width:90vw;transition:.25s;z-index:60}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+/* ---- sync ---- */
+.lock{position:fixed;inset:0;z-index:200;background:var(--i-bg);display:flex;align-items:center;justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 20px) 20px calc(env(safe-area-inset-bottom,0px) + 20px);overflow-y:auto}
+.lock[hidden]{display:none}
+.lock.sheet{background:rgba(0,0,0,.4);align-items:flex-end}
+.lockcard{width:100%;max-width:420px;background:var(--i-card);border-radius:20px;padding:26px 20px 14px;text-align:center}
+.lock.sheet .lockcard{border-radius:20px 20px 16px 16px}
+.lockicon{width:56px;height:56px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;background:var(--i-tint);color:#fff;font-size:28px;font-weight:700}
+.lockcard h2{font:700 22px var(--i-dfont);margin:0 0 6px}
+.lockmsg{color:var(--i-2);font-size:15px;line-height:1.4;margin:0 0 12px;text-align:left}
+.lockcard>.lockmsg:first-of-type{text-align:center}
+.lastsync{font-size:13px;color:var(--i-2);margin:-4px 0 16px}
+.lockcard .pbtn{width:100%;flex:none;min-height:50px;font-size:17px}
+.lhint{font-size:13px;color:var(--i-2);margin:10px 2px 6px;line-height:1.4;text-align:left}
+.lockerr{background:var(--i-redbg);color:var(--i-red);border-radius:12px;padding:10px 12px;font-size:14px;text-align:left;margin:12px 0 4px;line-height:1.4}
+.linkb{display:block;width:100%;border:0;background:none;color:var(--i-tint);font-size:15px;padding:12px 0 6px;cursor:pointer}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice{border:1.5px solid var(--i-sep);background:var(--i-bg);border-radius:14px;padding:12px 10px;text-align:left;cursor:pointer}
+.choice b{display:block;font-size:15px;margin-bottom:4px}
+.choice span{display:block;font-size:12.5px;color:var(--i-2);line-height:1.45;white-space:pre-line}
+.choice:active{border-color:var(--i-tint)}
+.reasons{text-align:left;font-size:14px;color:var(--i-label);padding-left:20px;margin:0 0 14px;line-height:1.45}
+.reasons li{margin-bottom:6px}
+.topbar{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:31;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 16px;background:var(--i-tint);color:#fff;font-size:14px;font-weight:600}
+.topbar[hidden]{display:none}
+.topbar.vo{background:#8e8e93}
+.topbar button{border:0;background:rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 12px;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap}
+body.hasbar main{padding-top:calc(env(safe-area-inset-top,0px) + 38px)}
+[hidden]{display:none!important}
 
 </style>
 </head>
@@ -138,6 +168,35 @@ main{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) calc(64
   <button type="button" role="tab" data-tab="expend" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 18h4"/></svg>Expenditure</button>
   <button type="button" role="tab" data-tab="more" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>More</button>
 </nav>
+<div class="lock" id="lock" hidden role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+  <div class="lockcard">
+    <div class="lockicon" aria-hidden="true">⇅</div>
+    <h2 id="lockTitle">Sync</h2>
+    <p class="lockmsg" id="lockMsg">Brings in the latest from iCloud — including what you did on the laptop — and keeps this iPhone's changes.</p>
+    <p class="lastsync" id="lastSync"></p>
+    <div id="lockStep1">
+      <button type="button" class="pbtn" id="syncLoad">⇅ Sync from iCloud</button>
+      <p class="lhint">In <b>iCloud Drive › Shortcuts</b> tap <b>Select</b>, choose <b>Total.txt</b> and <b>expense_data.json</b>, then <b>Open</b>.</p>
+    </div>
+    <div id="lockChoice" hidden>
+      <p class="lockmsg"><b>First sync:</b> Shift Pay is different on this iPhone and in the iCloud file. Which one is up to date?</p>
+      <div class="choices">
+        <button type="button" class="choice" id="chFile"><b>iCloud file</b><span id="chFileTxt"></span></button>
+        <button type="button" class="choice" id="chHere"><b>This iPhone</b><span id="chHereTxt"></span></button>
+      </div>
+      <p class="lhint">This is asked only once. From then on, changes from both devices are combined automatically.</p>
+    </div>
+    <div id="lockStep2" hidden>
+      <p class="lockmsg" id="step2Msg">Loaded ✓ Now save this iPhone's changes back to iCloud.</p>
+      <button type="button" class="pbtn" id="syncSave">☁️ Save to iCloud</button>
+      <p class="lhint">Runs your <b>Save Expenses</b> shortcut. When it finishes, tap <b>◀ Money</b> at the top-left to come back.</p>
+    </div>
+    <div class="lockerr" id="lockErr" hidden></div>
+    <button type="button" class="linkb" id="lockClose">Not now</button>
+  </div>
+</div>
+<input type="file" id="syncFile" multiple accept=".txt,.json,text/plain,application/json" hidden>
+<div class="topbar" id="dirtyBar" hidden><span id="dirtyTxt">Changes not backed up</span><button type="button" id="dirtySync">⇅ Sync</button></div>
 
 <template id="pay-tpl"><style>
 :host{--bg:#eef1f4;--card:#fff;--ink:#14202b;--mut:#5d6b78;--line:#dbe1e7;--acc:#0f766e;--accbg:#d9f1ee;--M:#d99a00;--A:#e4572e;--N:#3d4ec9;--O:#9aa6b2;--neg:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -650,6 +709,8 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 .sheet{border-radius:14px;max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--i-card2);box-shadow:0 10px 40px rgba(0,0,0,.25)}
 .ck,label.ck,.sheet .ck{display:block!important;padding-left:28px;position:relative;line-height:1.35}
 .ck>input[type=radio],.ck>input[type=checkbox]{position:absolute;left:0;top:1px;margin:0}
+/* the ⇅ Sync screen replaces Expenses' own Update button in the Money app */
+#updChip{display:none!important}
 </style><div class="root">
 <script id="embedded" type="text/plain" data-from="__FROM__" data-to="__TO__">__LOG_B64__</script>
 <script id="embedded-settings" type="text/plain">__SETTINGS_B64__</script>
@@ -750,7 +811,7 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 </div></template>
 <script>
 "use strict";
-const APP_VERSION="2.5";
+const APP_VERSION="2.8";
 /* Each engine sees only its own compartment when it looks up parts of the page. */
 function mount(id){
   const host=document.getElementById(id), root=host.attachShadow({mode:"open"});
@@ -1189,7 +1250,8 @@ if(!Object.keys(S.fy).length)setTimeout(openSetup,60);
 ;return {get S(){return S},showTab:t=>showTab(t),run:()=>{try{run()}catch(e){}},calc:a=>calc(a),args:()=>args(),
  save:()=>save(),f3:x=>f3(x),el:id=>$(id),renderFxList:()=>{try{renderFxList();renderTotals()}catch(e){}},
  restoreFromText:t=>restoreFromText(t),makeBackup:()=>makeBackup(),
- markBackedUp:()=>{S.lastBackup=Date.now();save();try{updBanner()}catch(e){}}};
+ markBackedUp:()=>{S.lastBackup=Date.now();save();try{updBanner()}catch(e){}},
+ refresh:()=>{S.fy=S.fy||{};S.hol=S.hol||[];S.rest=S.rest||[];S.ot=S.ot||{};S.leave=S.leave||[];S.monthData=S.monthData||{};S.pm=S.pm||{};S.acc=S.acc||[];S.act=S.act||[];S.yr=S.yr||[];S.cards=S.cards||[];S.fx=S.fx||[];S.wt=S.wt||{};S.data=S.data||{};S.leaveCredits=S.leaveCredits||[];S.col={...DEF,...(S.col||{})};S.G=S.G||'A';S.mon=S.mon||defMon();S.div=208;S.otb=0;S.skip=true;S.rs=S.rs||'';S.re=S.re||'';S.ext=S.ext||0;S.ded=S.ded||0;save();fill();loadMonthFields();syncExp();run();updBanner();}};
 })(PAYM.doc); }catch(e){ console.error("Shift Pay failed to start",e); }
 </script>
 <script>
@@ -1198,8 +1260,9 @@ try{ EXP=(function(document){ let __api=null;
 (function(){
 "use strict";
 const CUR="KWD";
-const APP_VERSION="3.7", APP_DATE="25 Nov 2026";
+const APP_VERSION="3.9", APP_DATE="25 Nov 2026";
 const CHANGELOG=[
+ ["3.9","26 Nov 2026","expense_data.json can also carry Shift Pay (one file for everything) · safer rule editor"],
  ["3.7","25 Nov 2026","An account SMS that mentions a credit card (bill payment) stays an account · credit card shows your bill payment straight away · loan payments never counted as spending · chart info box hides when you lift your finger"],
  ["3.6","25 Nov 2026","Works inside the iPhone app (with Shift Pay): new SMS arrive from the Open Expenses shortcut; security rule blocks the page from sending anything to the internet."],
  ["3.5","25 Nov 2026","Use any of your rules on a transaction; edit rules. Learned merchants grouped by category with search. Money returned is linked (🔗) to what you lent — once settled, neither counts. Credit card bill payments are recognised and never counted as spending or money in."],
@@ -1580,7 +1643,7 @@ function openTeach(src,edit){
     '<div class="smsbox" style="line-height:2">'+chips.map(w=>'<button class="tab" data-w="'+esc(w)+'" style="margin:0 4px 4px 0">'+esc(w)+'</button>').join("")+'</div>'+
     '<label class="f">When an SMS contains<input id="tWords" value="'+esc(start)+'" placeholder="e.g. ROSTAMANI  (separate words with commas)"></label>'+
     '<div class="f2"><label class="f">Match<select id="tMode"><option value="all">all of these words</option><option value="any">any of these words</option></select></label>'+
-    '<label class="f">For<select id="tType">'+(src.type?'<option value="'+src.type+'">'+(src.type==="debit"?"money out only":"money in only")+'</option>':'')+'<option value="any">money in &amp; out</option></select></label></div>'+
+    '<label class="f">For<select id="tType">'+(src.type?'<option value="'+esc(src.type)+'">'+(src.type==="debit"?"money out only":"money in only")+'</option>':'')+'<option value="any">money in &amp; out</option></select></label></div>'+
     '<label class="f">It means<select id="tAct"></select></label>'+
     '<label class="f" id="tNameWrap">Show it as (optional — a shop or person’s name)<input id="tName" placeholder="e.g. Rostamani Cafeteria, Ahmed"></label>'+
     '<div id="tPrev" style="margin:4px 0 10px"></div>'+
@@ -1589,7 +1652,7 @@ function openTeach(src,edit){
       const fillAct=()=>{ const ty=$("tType").value; const cur=$("tAct").value||src.category;
         $("tAct").innerHTML=catOpts(ty==="any"?null:ty).map(c=>'<option'+(c===cur?" selected":"")+'>'+esc(c)+'</option>').join("")+'<option value="__ignore"'+(cur==="__ignore"?" selected":"")+'>🚫 Not a transaction (ignore)</option>'; };
       if(!src.type){ $("tType").value="any"; } fillAct(); if(!src.type) $("tAct").value="__ignore";
-      if(edit){ $("tMode").value=edit.mode||"all"; if(![...$("tType").options].some(o=>o.value===edit.type)) $("tType").insertAdjacentHTML("afterbegin",'<option value="'+edit.type+'">'+(edit.type==="debit"?"money out only":"money in only")+'</option>');
+      if(edit){ $("tMode").value=edit.mode||"all"; if(![...$("tType").options].some(o=>o.value===edit.type)) $("tType").insertAdjacentHTML("afterbegin",'<option value="'+esc(edit.type)+'">'+(edit.type==="debit"?"money out only":"money in only")+'</option>');
         $("tType").value=edit.type; fillAct(); $("tAct").value=edit.action==="ignore"?"__ignore":edit.category; $("tName").value=edit.name||""; $("tSave").textContent="Save changes"; }
       const build=()=>{ const words=$("tWords").value.split(",").map(norm).filter(Boolean); const ig=$("tAct").value==="__ignore";
         return {id:"r"+Date.now().toString(36),words,mode:$("tMode").value,type:ig?"any":$("tType").value,action:ig?"ignore":"category",category:ig?null:$("tAct").value,name:ig?"":norm($("tName").value),created:Date.now()}; };
@@ -2378,12 +2441,18 @@ $("addPaste").onclick=()=>{ const n=addExtra(textToMessages($("paste").value)); 
 function status(t){ $("status").textContent=t; clearTimeout(status.t); status.t=setTimeout(()=>{$("status").textContent="";},6000); }
 /* one loader for every kind of file: SMS logs, expense_data.json, old settings or report files */
 function isSettingsObj(o){ return o&&typeof o==="object"&&!Array.isArray(o)&&(o.budgets||o.merchants||o.templates||o.fixes||o.txOverrides||o.extraMessages||o.userRules); }
+// The Money apps put Shift Pay into the same expense_data.json. They hand it over through window.__moneyHooks.
+// On its own, this dashboard doesn't use Shift Pay, but it keeps that section exactly as it found it, so saving never removes it.
+let KEEP_SP=null;
+const spHooks=()=>(typeof window!=="undefined"&&window.__moneyHooks)||null;
+function takeShiftPay(sp){ if(!sp||typeof sp!=="object"||Array.isArray(sp)) return false; const h=spHooks(); if(h&&h.in) return !!h.in(sp); KEEP_SP=sp; return false; }
 function loadAnyText(text){
   const res={settings:false,msgs:0,kind:"log"}; let o=null;
   try{ o=JSON.parse(String(text).replace(/^\uFEFF/,"")); }catch(e){}
   if(o&&typeof o==="object"&&!Array.isArray(o)){
     const st=isSettingsObj(o.settings)?o.settings:isSettingsObj(o)?o:null;
     if(st){ S=mergeSettings(S,normSettings(st)); SNAP=flatSettings(S); rules=compileRules(rulesText()); store.set("exp_settings_v2",JSON.stringify(S)); store.set("exp_saved_at",String(S.updated||0)); res.settings=true; }
+    if(o.shiftpay){ takeShiftPay(o.shiftpay); res.shiftpay=true; }
     const rows=[]; (o.months||[]).forEach(m=>(m.transactions||[]).forEach(t=>rows.push(t)));
     (o.transactions||[]).forEach(t=>rows.push(t)); (o.needs_check||[]).forEach(t=>rows.push(t)); (o.unparsed_messages||[]).forEach(t=>rows.push(t));
     const ms=rows.filter(t=>t&&typeof t.sms==="string"&&t.sms.trim()).map(t=>({date:parseDate(t.date),sender:t.sender||"",text:t.sms}));
@@ -2427,6 +2496,7 @@ function buildAll(){
   const months=CYCLES.map(c=>{ const r=buildReport(computeView(c)); return {period:r.report.period,from:r.report.from,to:r.report.to,summary:r.summary,transactions:r.transactions}; });
   return {type:"expense_data",version:2,app_version:APP_VERSION,saved_at:new Date().toISOString(),currency:CUR,
     note:"Settings + every salary month. Month starts on the salary credit. Spending excludes loan, sent home and card bill payments.",
+    ...(()=>{ const h=spHooks(), sp=h&&h.out?h.out():KEEP_SP; return sp?{shiftpay:sp}:{}; })(),
     settings:S,months,needs_check:NEEDFIX.map(({m})=>({date:m.date?m.date.toISOString():null,sender:m.sender,sms:norm(m.text)}))};
 }
 async function saveAll(){
@@ -2458,17 +2528,18 @@ const idb={ db:null,
   async get(k){ const db=this.db||await this.open(); return new Promise(res=>{ const q=db.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }); },
   async set(k,v){ const db=this.db||await this.open(); return new Promise(res=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=()=>res(true); t.onerror=()=>res(false); }); } };
 async function readFolder(){
-  const msgs=[]; let fileSettings=null;
+  const msgs=[]; let fileSettings=null, fileSP=null;
   for await (const h of FOLDER.values()){
     if(h.kind!=="file") continue; const n=h.name.toLowerCase();
-    if(n==="expense_data.json"){ try{ const o=JSON.parse(await (await h.getFile()).text()); fileSettings=o&&o.settings?o.settings:o; }catch(e){} continue; }
+    if(n==="expense_data.json"){ try{ const o=JSON.parse(await (await h.getFile()).text()); fileSettings=o&&o.settings?o.settings:o; fileSP=o&&o.shiftpay||null; }catch(e){} continue; }
     if(smsFileNames().includes(n)){ try{ textToMessages(await (await h.getFile()).text()).forEach(m=>msgs.push(m)); }catch(e){} } }
-  return {msgs,fileSettings};
+  return {msgs,fileSettings,fileSP};
 }
 async function writeFolder(reason){
   if(!FOLDER) return false;
   try{
-    const {fileSettings}=await readFolder();            // pick up changes made on the other device first
+    const {fileSettings,fileSP}=await readFolder();     // pick up changes made on the other device first
+    if(fileSP) takeShiftPay(fileSP);
     if(fileSettings){ S=mergeSettings(S,normSettings(fileSettings)); SNAP=flatSettings(S); rules=compileRules(rulesText()); store.set("exp_settings_v2",JSON.stringify(S)); }
     processAll();
     const fh=await FOLDER.getFileHandle("expense_data.json",{create:true}), w=await fh.createWritable();
@@ -2479,12 +2550,14 @@ async function writeFolder(reason){
 async function syncFromFolder(){
   if(!FOLDER) return;
   try{
-    const {msgs,fileSettings}=await readFolder(); FOLDER_MSGS=msgs;
+    const {msgs,fileSettings,fileSP}=await readFolder(); FOLDER_MSGS=msgs;
     let changed=false;
+    if(fileSP){ if(takeShiftPay(fileSP)) changed=true; } else if(spHooks()&&spHooks().out) changed=true;
     if(fileSettings){ const before=JSON.stringify(flatSettings(S)); S=mergeSettings(S,normSettings(fileSettings)); SNAP=flatSettings(S);
       changed=JSON.stringify(SNAP)!==JSON.stringify(flatSettings(normSettings(fileSettings))); rules=compileRules(rulesText()); store.set("exp_settings_v2",JSON.stringify(S)); if(JSON.stringify(SNAP)!==before) render(); }
     render(); lastFolderSync=Date.now(); showSync();
     if(changed||!fileSettings) writeFolder("sync");          // this device had something the file didn’t
+    const hk=spHooks(); if(hk&&hk.afterSync) hk.afterSync();
   }catch(e){ showSync("⚠️ Couldn’t read the folder — tap to reconnect"); }
 }
 async function connectFolder(fromClick){
@@ -2500,6 +2573,8 @@ async function connectFolder(fromClick){
   }catch(e){ if(e&&e.name!=="AbortError") showSync("⚠️ "+(e.message||"Folder not available")); return false; }
 }
 window.__expConnect=async h=>{ FOLDER=h; await syncFromFolder(); };   // used by the test set
+window.__expRequestSave=()=>onSettingsChanged();
+window.__expFolder=()=>FOLDER;
 function onSettingsChanged(){ if(!FOLDER) return; clearTimeout(folderSaveT); folderSaveT=setTimeout(()=>writeFolder("change"),2000); }
 document.addEventListener("visibilitychange",()=>{ if(!FOLDER) return; if(document.visibilityState==="hidden"){ clearTimeout(folderSaveT); writeFolder("close"); } else if(Date.now()-lastFolderSync>60e3) syncFromFolder(); });
 function showSync(msg){ const el=$("syncChip"); if(!el) return;
@@ -2547,6 +2622,103 @@ showSync(); if(HAS_FS) connectFolder(false);
 
 ;return __api;
 })(EXPM.doc); }catch(e){ console.error("Expenses failed to start",e); }
+</script>
+<script>
+/* ===== Shift Pay sync: item-by-item merge through expense_data.json (shared by Money and Money Desk) =====
+   Every Shift Pay record (a leave day, an overtime day, an exchange, a month's plan, a setting…) is one "item".
+   Each device remembers when it last changed each item (and when it deleted one). When two copies meet,
+   the newest change to each item wins, so changes made on different devices are all kept. */
+const SPSYNC=(function(){
+"use strict";
+const EXCL=new Set(["mon","div","otb","skip","ext","ded","lastBackup","v"]);           // per-device or reset on every start
+const OBJ=new Set(["fy","fyb","ot","monthData","pm","wt","data","col","rep"]);           // maps: one item per key
+const IDARR=new Set(["fx","acc","act","cards","yr"]);                                      // lists of records with an id
+const DARR=new Set(["leave"]);                                                             // lists of records with a date (d)
+const SETS=new Set(["hol","rest"]);                                                        // lists of dates
+const stable=v=>{ if(v===null||typeof v!=="object") return JSON.stringify(v); if(Array.isArray(v)) return "["+v.map(stable).join(",")+"]";
+  return "{"+Object.keys(v).sort().map(k=>JSON.stringify(k)+":"+stable(v[k])).join(",")+"}"; };
+const kindOf=(k,v)=>OBJ.has(k)?"obj":IDARR.has(k)&&Array.isArray(v)&&v.every(x=>x&&typeof x==="object"&&x.id!=null)?"id":DARR.has(k)&&Array.isArray(v)&&v.every(x=>x&&typeof x==="object"&&x.d!=null)?"d":SETS.has(k)&&Array.isArray(v)?"set":
+  (v&&typeof v==="object"&&!Array.isArray(v))?"obj":"whole";
+function flat(S){ const f={};
+  for(const k of Object.keys(S||{})){ if(EXCL.has(k)) continue; const v=S[k], kind=kindOf(k,v);
+    if(kind==="obj"){ f[k+"{}"]=true; for(const s of Object.keys(v||{})) f[k+"."+s]=v[s]; }
+    else if(kind==="id"){ f[k+"[]"]="id"; v.forEach(x=>f[k+"#"+x.id]=x); }
+    else if(kind==="d"){ f[k+"[]"]="d"; v.forEach(x=>f[k+"@"+x.d]=x); }
+    else if(kind==="set"){ f[k+"[]"]="set"; v.forEach(x=>f[k+"="+x]=true); }
+    else f[k]=v; }
+  return f; }
+function unflat(F,cur){ const S={}, order={};
+  for(const k of Object.keys(cur||{})) if(EXCL.has(k)) S[k]=cur[k];
+  for(const k of Object.keys(cur||{})) if(Array.isArray(cur[k])) order[k]=cur[k].map(x=>x&&typeof x==="object"?String(x.id!=null?x.id:x.d):String(x));
+  const lists={};
+  for(const key of Object.keys(F)){ let m;
+    if((m=key.match(/^(.+)\{\}$/))){ S[m[1]]=S[m[1]]||{}; continue; }
+    if((m=key.match(/^(.+)\[\]$/))){ lists[m[1]]=lists[m[1]]||[]; continue; }
+    if((m=key.match(/^([^.#@=]+)\.(.+)$/))&&F[m[1]+"{}"]){ (S[m[1]]=S[m[1]]||{})[m[2]]=F[key]; continue; }
+    if((m=key.match(/^([^.#@=]+)[#@](.+)$/))&&F[m[1]+"[]"]){ (lists[m[1]]=lists[m[1]]||[]).push([m[2],F[key]]); continue; }
+    if((m=key.match(/^([^.#@=]+)=(.+)$/))&&F[m[1]+"[]"]==="set"){ (lists[m[1]]=lists[m[1]]||[]).push([m[2],m[2]]); continue; }
+    S[key]=F[key]; }
+  for(const k of Object.keys(lists)){ const o=order[k]||[], L=lists[k];
+    L.sort((a,b)=>{ const ia=o.indexOf(a[0]), ib=o.indexOf(b[0]); if(ia>=0&&ib>=0) return ia-ib; if(ia>=0) return -1; if(ib>=0) return 1; return a[0]<b[0]?-1:a[0]>b[0]?1:0; });
+    S[k]=F[k+"[]"]==="set"?L.map(x=>{ const c=(cur&&cur[k]||[]).find(y=>String(y)===x[0]); return c!==undefined?c:x[1]; }):L.map(x=>x[1]); }
+  return S; }
+
+let PAY=null, KEY="", meta=null, onLocalChange=null, pending=null, markOnOut=false;
+const now=()=>Date.now();
+function load(){ try{ meta=JSON.parse(localStorage.getItem(KEY)||"null"); }catch(e){ meta=null; }
+  if(!meta||typeof meta!=="object") meta={times:{},gone:{},base:{},synced:false}; ["times","gone","base"].forEach(k=>{ if(!meta[k]||typeof meta[k]!=="object") meta[k]={}; }); }
+function store(){ try{ localStorage.setItem(KEY,JSON.stringify(meta)); }catch(e){} }
+const hasData=S=>!!(S&&S.fy&&Object.keys(S.fy).length);
+/* Note what changed on this device since the last look. */
+function scan(){ if(!PAY) return false; const F=flat(PAY.S), t=now(); let changed=false;
+  for(const k of Object.keys(F)){ const h=stable(F[k]); if(meta.base[k]===h) continue;
+    // an item already here before the first look counts as "old" (1); anything after that is stamped with the time it changed
+    meta.times[k]=meta.base[k]===undefined&&!meta.init?(meta.times[k]||1):t; meta.base[k]=h; delete meta.gone[k]; changed=true; }
+  for(const k of Object.keys(meta.base)) if(!(k in F)){ delete meta.base[k]; delete meta.times[k]; meta.gone[k]=t; changed=true; }
+  if(!meta.init){ meta.init=t; changed=true; }
+  if(changed) store(); return changed; }
+function out(){ scan(); if(markOnOut&&!meta.synced&&!pending){ meta.synced=true; store(); }   // the laptop writes the shared file itself, so the file then matches it
+  const cut=now()-120*864e5; for(const k of Object.keys(meta.gone)) if(meta.gone[k]<cut) delete meta.gone[k];
+  return {type:"shiftpay_sync",version:1,saved_at:new Date().toISOString(),state:unflat(flat(PAY.S),PAY.S),times:meta.times,gone:meta.gone}; }
+function apply(F){ const S=PAY.S, next=unflat(F,S);
+  for(const k of Object.keys(S)) if(!EXCL.has(k)) delete S[k];
+  Object.assign(S,next); PAY.refresh();
+  meta.base={}; const G=flat(PAY.S); for(const k of Object.keys(G)) meta.base[k]=stable(G[k]); store(); }
+function summary(S){ const fy=S.fy||{}, ks=Object.keys(fy).sort(), b=ks.length?fy[ks[ks.length-1]]:null;
+  return {basic:b, group:S.G||"—", leave:(S.leave||[]).length, overtime:Object.keys(S.ot||{}).length, exchanges:(S.fx||[]).length, months:Object.keys(S.monthData||{}).length}; }
+function valid(sp){ return sp&&typeof sp==="object"&&sp.state&&typeof sp.state==="object"&&!Array.isArray(sp.state)&&sp.state.fy&&typeof sp.state.fy==="object"; }
+/* Take the Shift Pay section of a file. Returns true when this device has something newer than the file (so it should save). */
+function take(sp){ if(!PAY||!valid(sp)) return false; scan();
+  const L=flat(PAY.S), R=flat(sp.state), rt=sp.times||{}, rg=sp.gone||{};
+  if(!meta.synced){
+    if(!hasData(PAY.S)){ apply(R); meta.times=Object.assign({},rt); meta.gone=Object.assign({},rg); meta.synced=true; store(); return false; }
+    if(stable(L)===stable(R)){ meta.synced=true; store(); return false; }
+    pending={sp,here:summary(PAY.S),file:summary(sp.state)}; return false;              // first time and they differ: ask which is right
+  }
+  // For every item, the newest event wins: a change on this device, a change in the file, or a deletion on either side.
+  const keys=new Set([...Object.keys(L),...Object.keys(R),...Object.keys(meta.gone),...Object.keys(rg)]), M={}, T={}, Gn={}; let localNewer=false;
+  for(const k of keys){
+    const ls=k in L?(meta.times[k]||1):-1, fs=k in R?(rt[k]||1):-1, ld=k in L?-1:(meta.gone[k]||-1), fd=k in R?-1:(rg[k]||-1);
+    const best=Math.max(ls,fs,ld,fd);
+    if(best<0) continue;
+    if(best===ls){ M[k]=L[k]; T[k]=ls; if(!(k in R)||stable(L[k])!==stable(R[k])) localNewer=true; }
+    else if(best===fs){ M[k]=R[k]; T[k]=fs; }
+    else { Gn[k]=best; if(k in R) localNewer=true; }            // deleted here after the file last had it
+  }
+  const changedHere=stable(M)!==stable(L);
+  meta.times=T; meta.gone=Gn;
+  if(changedHere) apply(M); else store();
+  return localNewer; }
+function choose(which){ if(!pending) return false; const p=pending; pending=null;
+  if(which==="file"){ apply(flat(p.sp.state)); meta.times=Object.assign({},p.sp.times||{}); meta.gone=Object.assign({},p.sp.gone||{}); meta.synced=true; store(); return false; }
+  const t=now(); for(const k of Object.keys(meta.base)) meta.times[k]=t; meta.synced=true; store(); return true; }   // keep this device: it becomes the newest
+let timer=null;
+function init(o){ PAY=o.pay; KEY=o.key; onLocalChange=o.onLocalChange||null; markOnOut=!!o.markOnOut; load(); scan();
+  clearInterval(timer); timer=setInterval(()=>{ if(scan()&&onLocalChange) onLocalChange(); },2000); }
+const lastChange=()=>{ let m=0; for(const k in meta.times) if(meta.times[k]>m) m=meta.times[k]; for(const k in meta.gone) if(meta.gone[k]>m) m=meta.gone[k]; return m; };
+return {init,scan,out,take,choose,get synced(){return !!(meta&&meta.synced)},get pending(){return pending},summary,lastChange,_flat:flat,_unflat:unflat};
+})();
+
 </script>
 <script>
 /* ===== Money app shell: tabs, Home overview, links between Shift Pay and bank SMS ===== */
@@ -2608,6 +2780,7 @@ function catTotals(V){ const m={}; (V.spend||[]).forEach(t=>{ m[t.category]=(m[t
   return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
 function cycleForPayMonth(m){ return expCycles().find(c=>c.salaryTx&&payMonthOfCredit(c.salaryTx.date)===m)||null; }
 
+let setupWaiting=false;
 /* ---------- navigation ---------- */
 const PAGE={home:"pg-home",salary:"pg-pay",exp:"pg-exp",expend:"pg-pay",more:"pg-more",leaves:"pg-pay",fx:"pg-pay",data:"pg-pay"};
 const PAYTAB={salary:["s","Salary"],expend:["e","Expenditure"],leaves:["l","Leaves"],fx:["x","Exchanges to India"],data:["d","Salary data & backup"]};
@@ -2645,7 +2818,9 @@ if(PAYM&&PAYM.root){ let pt=null;
 /* A Shift Pay pop-up (like first-time set-up) must never stay hidden behind another tab. */
 if(PAYM&&PAYM.root){
   const openDlg=()=>PAYM.root.querySelector("dialog[open]");
-  new MutationObserver(()=>{ if(openDlg()&&PAGE[cur]!=="pg-pay") go("salary"); })
+  new MutationObserver(()=>{ const d=openDlg(); if(!d) return;
+      const lk=document.getElementById("lock"); if(d.id==="sdlg"&&lk&&!lk.hidden){ d.close(); setupWaiting=true; return; }   // set-up waits for Sync
+      if(PAGE[cur]!=="pg-pay") go("salary"); })
     .observe(PAYM.root,{subtree:true,attributes:true,attributeFilter:["open"]});
 }
 
@@ -2664,12 +2839,12 @@ function shiftCard(){
 }
 function monthCard(){
   const C=expCycles();
-  if(!C.length) return `<div class="gh">This month</div><div class="grp"><div class="empty">No bank SMS loaded yet.</div><div class="btnrow"><button class="pbtn" data-act="update">📥 Load Total.txt</button></div></div>`;
+  if(!C.length) return `<div class="gh">This month</div><div class="grp"><div class="empty">No bank SMS loaded yet.</div><div class="btnrow"><button class="pbtn" data-act="update">⇅ Sync from iCloud</button></div></div>`;
   const V=EXP.computeView(C[0]), S=EXP.S, bud=S.budgets&&+S.budgets.total>0?+S.budgets.total:0;
   let budHtml="";
   if(bud){ const p=V.spent/bud, pace=V.total?V.elapsed/V.total:1, cls=p>1?"bad":p>pace+0.1?"warn":"";
     budHtml=`<div class="pbar"><i class="${cls}" style="width:${Math.min(100,p*100).toFixed(1)}%"></i></div><div class="note">${k3(Math.max(0,bud-V.spent))} left of ${k3(bud)} budget${V.daysLeft?" · "+V.daysLeft+(V.daysLeft===1?" day":" days")+" to go":""}</div>`; }
-  else if(V.daysLeft) budHtml=`<div class="note" style="margin-top:8px">${V.daysLeft} days until next salary (about)</div>`;
+  else if(V.daysLeft) budHtml=`<div class="note" style="margin-top:8px">${V.daysLeft} ${V.daysLeft===1?"day":"days"} until next salary (about)</div>`;
   return `<div class="gh">${esc(C[0].label||"This month")}</div><div class="grp"><button class="cell sumcard" data-go="exp" style="display:block">
     <div class="lab">Money now</div><div class="big">${k3(V.current!=null?V.current:V.opening)}<small>KWD</small></div><div class="note">${esc(V.current!=null?V.curNote:V.openNote)}</div>
     <div class="two"><div><div class="lab">Spent</div><div class="mid">${k3(V.spent)}</div></div><div><div class="lab">Started with</div><div class="mid">${k3(V.opening)}</div></div></div>
@@ -2706,7 +2881,7 @@ function renderHome(){
   $s("home").innerHTML=h+`<p class="gf" style="margin-top:22px;text-align:center">Everything stays on this iPhone · Money ${APP_VERSION}</p>`;
 }
 $s("home").addEventListener("click",e=>{ const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
-  if(b.dataset.act==="update"){ go("exp"); EXP&&EXP.update(); return; } go(b.dataset.go,{from:"home"}); });
+  if(b.dataset.act==="update"){ openSync("sheet"); return; } go(b.dataset.go,{from:"home"}); });
 
 /* ---------- More ---------- */
 function cell(icon,bg,title,sub,attr,chev){ return `<button class="cell ic${chev===false?" act":""}" ${attr}><div class="ibox" style="background:${bg};color:#fff">${icon}</div><div class="t">${title}${sub?`<small>${sub}</small>`:""}</div>${chev===false?"":'<span class="chev">›</span>'}</button>`; }
@@ -2718,10 +2893,9 @@ function renderMore(){
   <div class="gh">Backup &amp; sync</div><div class="grp">
    ${cell("📦","#34c759","Back up everything","One file: Shift Pay + Expenses settings"+(lastAll()?" · last "+lastAll():""),'data-act="backupAll"',false)}
    ${cell("♻️","#30b0c7","Restore from a backup","Full backup, Shift Pay backup or expense_data.json",'data-act="restore"',false)}
-   ${cell("📥","#007aff","Load new SMS","Pick Total.txt and expense_data.json",'data-act="update"',false)}
-   ${cell("☁️","#32ade6","Save to iCloud","expense_data.json · keeps your laptop in step",'data-act="save"',false)}
+   ${cell("⇅","#007aff","Sync now","Last synced "+lastSyncText(),'data-act="sync"',false)}
    ${cell("🗂","#5ac8fa","Shift Pay backup & saved months","Shift Pay only, CSV of saved months",'data-go="data"')}</div>
-  <p class="gf">Your SMS are not in backups — they always come from Total.txt.</p><input type="file" id="restoreFile" accept=".json,application/json,text/plain" hidden>
+  <p class="gf">expense_data.json now holds Expenses and Shift Pay together. Your SMS always come from Total.txt.</p><input type="file" id="restoreFile" accept=".json,application/json,text/plain" hidden>
   <div class="gh">Shift Pay</div><div class="grp">
    ${cell("🌴","#34c759","Leaves","Leave records, balance and entitlement",'data-go="leaves"')}
    ${cell("₹","#ff9500","Exchanges to India","Your list + transfers found in bank SMS",'data-go="fx"')}</div>
@@ -2748,6 +2922,7 @@ $s("more").addEventListener("click",e=>{ const lk=e.target.closest("button[data-
 $s("more").addEventListener("click",e=>{ if(e.target.closest("button[data-look]")) return; const b=e.target.closest("[data-go],[data-act]"); if(!b) return;
   const a=b.dataset.act;
   if(!a) return go(b.dataset.go,{from:"more"});
+  if(a==="sync") return openSync("sheet");
   if(a==="backupAll") return backupAll();
   if(a==="restore") return $s("restoreFile").click();
   if(!EXP) return;
@@ -2855,12 +3030,83 @@ if(EXPM&&EXPM.root){ let st=null;
           sec.parentNode.insertBefore(n,sec); n.querySelector("#goBackups").onclick=()=>{ const x=EXPM.root.querySelector(".sheet-bg.on .sheet-h button"); if(x) x.click(); go("more"); }; } } });
   },0); }).observe(EXPM.root,{subtree:true,childList:true}); }
 
+/* ---------- Sync (one file for everything: expense_data.json) ---------- */
+const VO_KEYS=["money_shiftpay","money_shiftpay_sync","exp_settings_v2","exp_saved_at"];   // only to undo an old v2.7 view-only session once
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+const lastSync=()=>+ls.get("money_last_sync")||0;
+function lastSyncText(){ const t=lastSync(); if(!t) return "never"; const d=new Date(t);
+  return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+", "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); }
+let lastTakeNewer=false, fileHadSP=false;
+window.__moneyHooks={ in:sp=>{ fileHadSP=true; const r=SPSYNC.take(sp); lastTakeNewer=lastTakeNewer||r; return r; }, out:()=>SPSYNC.out() };
+if(PAY) SPSYNC.init({pay:PAY,key:"money_shiftpay_sync",markOnOut:false,onLocalChange:()=>updBars()});
+function isDirty(){ const t=lastSync(); let e=0; try{ e=+EXP.S.updated||0; }catch(_){} return t>0&&(SPSYNC.lastChange()>t+1500||e>t+1500); }
+/* One simple bar at the top: shows only when there is something to back up. Nothing is ever locked. */
+function updBars(){ const never=!lastSync(), show=$s("lock").hidden&&(never||isDirty());
+  $s("dirtyTxt").textContent=never?"Not synced with iCloud yet":"Changes not backed up";
+  $s("dirtyBar").hidden=!show; document.body.classList.toggle("hasbar",show); }
+setInterval(updBars,2500);
+function step(n){ $s("lockStep1").hidden=n!==1; $s("lockChoice").hidden=n!=="choice"; $s("lockStep2").hidden=n!==2; if(n!=="err") $s("lockErr").hidden=true; }
+function syncErr(msg){ $s("lockErr").innerHTML=esc(msg)+'<br><span style="color:var(--i-2)">Try again, or tap <b>Not now</b> and keep using Money — the bar stays until it syncs.</span>'; step(1); $s("lockErr").hidden=false; }
+function setupDlg(){ return PAYM&&PAYM.root&&PAYM.root.getElementById("sdlg"); }
+function openSync(){
+  /* set-up waits until after sync */ const sd=setupDlg(); if(sd&&sd.open){ sd.close(); setupWaiting=true; }
+  const L=$s("lock"); L.classList.add("sheet");
+  $s("lastSync").textContent="Last synced: "+lastSyncText();
+  step(1); L.hidden=false; updBars(); }
+function closeSync(){ $s("lock").hidden=true; updBars();
+  if(setupWaiting){ setupWaiting=false; const sd=setupDlg(); if(sd&&!(PAY&&Object.keys(PAY.S.fy||{}).length)){ try{ sd.showModal(); }catch(e){} } } if(cur==="home") renderHome(); if(cur==="more") renderMore(); }
+function finishSync(msg){ ls.set("money_last_sync",String(Date.now())); if(PAY) try{ PAY.markBackedUp(); }catch(e){} closeSync(); toast(msg); }
+$s("syncLoad").onclick=()=>{ $s("lockErr").hidden=true; $s("syncFile").click(); };
+let dirtyBefore=false;
+$s("syncFile").addEventListener("change",async e=>{
+  const files=[...e.target.files]; e.target.value="";
+  if(!files.length) return syncErr("No files were chosen.");
+  const json=files.find(f=>/\.json$/i.test(f.name)), txt=files.filter(f=>/\.txt$/i.test(f.name));
+  if(!json) return syncErr("expense_data.json wasn't chosen. Choose it together with Total.txt — it holds your settings and Shift Pay.");
+  let o=null; try{ o=JSON.parse((await json.text()).replace(/^\uFEFF/,"")); }catch(_){}
+  if(!o||typeof o!=="object") return syncErr(json.name+" couldn't be read. It may not be fully downloaded from iCloud yet — open iCloud Drive › Shortcuts once with internet, then try again.");
+  if(!o.settings&&!o.shiftpay&&o.type!=="expense_data") return syncErr(json.name+" isn't Money data. Choose expense_data.json from iCloud Drive › Shortcuts.");
+  dirtyBefore=isDirty()||!lastSync(); lastTakeNewer=false; fileHadSP=false;
+  try{ await EXP.importFiles(files); }catch(err){ return syncErr("The files couldn't be loaded ("+(err&&err.message||"unknown error")+")."); }
+  calcCache.clear(); linkCache=null;
+  if(SPSYNC.pending) return showChoice();
+  afterLoad(txt.length);
+});
+const pl=(n,w)=>n+" "+w+(n===1?"":"s");
+const sumTxt=s=>"Basic "+(s.basic!=null?k3(+s.basic):"—")+"\nGroup "+s.group+"\n"+pl(s.leave,"leave day")+"\n"+pl(s.overtime,"overtime day")+"\n"+pl(s.exchanges,"exchange")+"\n"+pl(s.months,"month")+" planned";
+function showChoice(){ const p=SPSYNC.pending; $s("chFileTxt").textContent=sumTxt(p.file); $s("chHereTxt").textContent=sumTxt(p.here); step("choice"); }
+$s("chFile").onclick=()=>{ const n=SPSYNC.choose("file"); lastTakeNewer=lastTakeNewer||n; afterLoad(1); };
+$s("chHere").onclick=()=>{ const n=SPSYNC.choose("here"); lastTakeNewer=lastTakeNewer||n; afterLoad(1); };
+function afterLoad(hadTxt){
+  const needSave=dirtyBefore||lastTakeNewer||!fileHadSP;
+  if(!needSave) return finishSync("Synced ✓ Everything is up to date"+(hadTxt?"":" (no Total.txt chosen, so no new SMS)"));
+  $s("step2Msg").textContent="Loaded ✓ "+(hadTxt?"":"(no Total.txt chosen, so no new SMS) ")+"Now save this iPhone's changes back to iCloud, so the laptop gets them too."; step(2);
+}
+$s("syncSave").onclick=async()=>{
+  let json; try{ json=JSON.stringify(EXP.buildAll()); }catch(e){ return syncErr("Couldn't prepare the data to save."); }
+  try{ await navigator.clipboard.writeText(json); }catch(e){ $s("lockErr").innerHTML="iPhone didn't allow copying for the Save Expenses shortcut. Tap <b>Save to iCloud</b> again."; $s("lockErr").hidden=false; return; }
+  try{ localStorage.setItem("exp_saved_at",String(Date.now())); }catch(e){}
+  finishSync("Saving… after the shortcut, tap ◀ Money to come back");
+  const url="shortcuts://run-shortcut?name="+encodeURIComponent("Save Expenses");
+  if(!window.__noShortcut) setTimeout(()=>{ location.href=url; },150);   // (tests switch this off: a desktop test browser can't open Shortcuts)
+};
+$s("lockClose").onclick=closeSync;
+$s("dirtySync").onclick=()=>openSync();
+
 /* ---------- start ---------- */
 let start="home"; try{ start=localStorage.getItem("money_tab")||"home"; }catch(e){}
 go(PAGE[start]&&!SUB[start]?start:"home");
 if(PAYM&&PAYM.root&&PAYM.root.querySelector("dialog[open]")) go("salary");
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
-window.__money={go,renderHome,refreshLinks};
+// v2.7 had "view only": if one was left open, put the saved data back once. v2.8 never locks.
+const reloading=(function(){ let o=null; try{ o=JSON.parse(ls.get("money_vo")||"null"); }catch(e){} ls.del("money_vo"); ls.del("money_hidden_at");
+  if(o&&o.data){ VO_KEYS.forEach(k=>{ if(k in o.data) ls.set(k,o.data[k]); else ls.del(k); }); location.reload(); return true; } return false; })();
+// The top bar is the one backup reminder, so Shift Pay's own "make a backup" note stays quiet here.
+if(PAY&&!reloading) try{ PAY.markBackedUp(); }catch(e){}
+// Brand-new iPhone (never synced, no Shift Pay yet): offer Sync once, before the set-up. "Not now" goes to set-up.
+if(!reloading&&!lastSync()&&!(PAY&&Object.keys(PAY.S.fy||{}).length)) openSync();
+updBars();
+window.__money={go,renderHome,refreshLinks,openSync};
 })();
 
 </script>
