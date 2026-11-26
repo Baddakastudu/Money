@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<!-- Money app v2.4 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
+<!-- Money app v2.5 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Money</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -199,6 +199,9 @@ details summary{cursor:pointer;font-weight:600}
 .exp-result{background:var(--accbg);border-radius:9px;padding:9px 10px;margin-top:8px}
 .exp-result span{display:block;color:var(--mut);font-size:12px}
 .exp-result b{font-size:22px;font-variant-numeric:tabular-nums}
+.fx-result{margin:12px 0 4px}.fx-result small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+.row{align-items:end}
+.fx-inr{display:block;font-size:14px;font-weight:600;color:var(--mut)}
 .exp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .exp-actions button{padding:7px 10px}
 .exp-card input{margin-bottom:2px}.field-reset{display:flex;align-items:center;gap:6px}.field-reset input{flex:1;min-width:0}.field-reset button{flex:0 0 32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:18px;cursor:pointer}.activity-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}.activity-row .entry-main{min-width:0}.activity-row .entry-title{font-weight:650;margin:0 0 5px}.activity-row label{margin-top:0}.entry-tools{display:flex;gap:5px;align-items:center}.entry-tools button{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}.entry-tools .delete-entry{color:var(--neg)}.entry-save{font-size:12px;color:var(--mut);margin-top:5px}.save-row{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
@@ -290,8 +293,17 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 ::-webkit-date-and-time-value{text-align:left}
 
 .mtag{font-weight:400;color:var(--i-2)}
+/* clean, aligned forms */
+.row{align-items:end;gap:12px}
+.row label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp-result{background:var(--i-fill);border-radius:12px;padding:12px 14px}
+.exp-result span{font-size:13px;color:var(--i-2)}
+.exp-result b{font:700 22px/1.25 var(--i-dfont);display:block}
+.fx-result{background:var(--i-tintbg)}
+.fx-result small{font-size:13px;color:var(--i-2)}
+.mtag{display:block;font-size:13px;font-weight:400;color:var(--i-2);margin-top:2px}
 </style><div class="root"><div class="wrap">
-<h1>Shift pay calculator</h1><p class="sub">Estimate your monthly salary and plan your expenditure. <span style="opacity:.55;font-size:11px">Version 18 Nov 2026 (C)</span></p>
+<h1>Shift pay calculator</h1><p class="sub">Estimate your monthly salary and plan your expenditure. <span style="opacity:.55;font-size:11px">Version 26 Nov 2026 (D)</span></p>
 <div id="banner" class="banner" hidden></div>
 <div class="page-tabs" role="tablist" aria-label="Calculator pages"><button type="button" id="salaryTab" role="tab" aria-selected="true" aria-controls="calc">Salary (Predicted)</button><button type="button" id="leaveTab" role="tab" aria-selected="false" aria-controls="leavepage">Leaves</button><button type="button" id="expenditureTab" role="tab" aria-selected="false" aria-controls="expenditure">Expenditure (Estimated)</button><button type="button" id="fxTab" role="tab" aria-selected="false" aria-controls="fxpage">Exchanges</button><button type="button" id="dataTab" role="tab" aria-selected="false" aria-controls="datapage">Data (Saved)</button></div>
 <div id="calc" role="tabpanel" aria-labelledby="salaryTab"><div class="grid"><div>
@@ -354,8 +366,9 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
     <div class="row"><div><label for="exGift">Gift</label><input id="exGift" type="number" min="0" step="0.001"></div><div><label for="exPocket">Pocket money</label><input id="exPocket" type="number" min="0" step="0.001"></div></div>
     <div class="exp-result"><span>Total monthly expenses</span><b id="monthlyTotal">0.000 KWD</b></div></div>
    <div class="exp-card" id="fxCard"><h2>Exchange money to India</h2><p class="hint">Use this only in a month when you send money. The amount is taken from the accounts you choose. It is not repeated next month.</p>
-    <div class="row"><div><label for="fxDate">Date</label><input id="fxDate" type="date"></div><div><label for="fxAmt">Amount to exchange (KWD)</label><input id="fxAmt" type="number" min="0" step="0.001"></div></div>
-    <div class="row"><div><label for="fxRate">Exchange rate (INR for 1 KWD)</label><input id="fxRate" type="number" min="0" step="0.01"></div><div><label for="fxInr">You will receive (INR)</label><input id="fxInr" type="text" readonly></div></div>
+    <div class="row"><div><label for="fxDate">Date</label><input id="fxDate" type="date"></div><div><label for="fxAmt">Amount paid (KWD)</label><input id="fxAmt" type="number" min="0" step="0.001" inputmode="decimal"></div></div>
+    <div class="row"><div><label for="fxFee">Fee (KWD)</label><input id="fxFee" type="number" min="0" step="0.001" inputmode="decimal" placeholder="0.000"></div><div><label for="fxRate">Rate (INR per KWD)</label><input id="fxRate" type="number" min="0" step="0.01" inputmode="decimal"></div></div>
+    <div class="exp-result fx-result"><span>You will receive</span><b id="fxInr">–</b><small id="fxNet">Amount paid includes the fee</small></div>
     <div id="fxFrom"></div>
     <label for="fxNote">Details (optional)</label><input id="fxNote" type="text" maxlength="200" placeholder="For example: family expenses">
     <p class="neg" id="fxErr" style="margin:8px 0 0"></p>
@@ -737,7 +750,7 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 </div></template>
 <script>
 "use strict";
-const APP_VERSION="2.4";
+const APP_VERSION="2.5";
 /* Each engine sees only its own compartment when it looks up parts of the page. */
 function mount(id){
   const host=document.getElementById(id), root=host.attachShadow({mode:"open"});
@@ -1029,31 +1042,33 @@ const setF=(f,x)=>{const r=rec();if(x==null)delete r[f];else r[f]=x};
 const setIn=(o,id,x)=>{const r=rec();r[o]=r[o]||{};if(x==null)delete r[o][id];else r[o][id]=x};
 let LAST=null,hiMonth='',ACCROWS=[];
 const fxMon=()=>S.fx.filter(x=>x.mon==S.mon),fxA=id=>fxMon().reduce((t,x)=>t+(+(x.from&&x.from[id])||0),0),fxId=()=>'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fxNet=x=>Math.max(0,(+x.kwd||0)-(+x.fee||0));
 const fxInr=(k,r)=>Math.round((+k||0)*(+r||0)*100)/100,n2=x=>(+x||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const accName=id=>{const a=S.acc.find(x=>x.id==id);return a?a.name:'(deleted account)'};
 function renderFxFrom(){const sal=ensureSal();$('fxFrom').innerHTML=S.acc.length?'<p class="hint" style="margin:8px 0 4px">Take the money from (the amounts must add up to the amount to exchange)</p><div class="row">'+S.acc.map(c=>`<div><label for="ff_${c.id}">${esc(c.name)}${c.id==sal?' (salary account)':''} (KWD)</label><input id="ff_${c.id}" type="number" min="0" step="0.001" data-ff="${c.id}"><span class="sm" id="ffh_${c.id}"></span></div>`).join('')+'</div>':'<p class="hint">Add an account above if you want the exchange to reduce an account balance.</p>'}
-function renderFxList(){$('fxList').innerHTML=fxMon().map(x=>`<span class="chip">${x.date?dm(x.date)+': ':''}${f3(x.kwd)} KWD at ${x.rate} = ${n2(fxInr(x.kwd,x.rate))} INR <button type="button" aria-label="Delete exchange" data-fxdel="${x.id}">×</button></span>`).join('');
- const t=fxMon().reduce((a,x)=>a+x.kwd,0);$('fxTotal').textContent=f3(t)+' KWD'+(t?' ('+n2(fxMon().reduce((a,x)=>a+fxInr(x.kwd,x.rate),0))+' INR)':'')}
-function fxFill(){const amt=parseFloat($('fxAmt').value)||0,rt=parseFloat($('fxRate').value)||0;$('fxInr').value=amt&&rt?n2(fxInr(amt,rt)):''}
+function renderFxList(){$('fxList').innerHTML=fxMon().map(x=>`<span class="chip">${x.date?dm(x.date)+': ':''}${f3(x.kwd)} KWD${x.fee?' (fee '+f3(x.fee)+')':''} at ${x.rate} = ${n2(fxInr(fxNet(x),x.rate))} INR <button type="button" aria-label="Delete exchange" data-fxdel="${x.id}">×</button></span>`).join('');
+ const t=fxMon().reduce((a,x)=>a+x.kwd,0);$('fxTotal').innerHTML=f3(t)+' KWD'+(t?'<small class="fx-inr">'+n2(fxMon().reduce((a,x)=>a+fxInr(fxNet(x),x.rate),0))+' INR received</small>':'')}
+function fxFill(){const amt=parseFloat($('fxAmt').value)||0,fee=parseFloat($('fxFee').value)||0,net=Math.max(0,amt-fee),rt=parseFloat($('fxRate').value)||0;$('fxInr').textContent=net&&rt?n2(fxInr(net,rt))+' INR':'–';$('fxNet').textContent=amt?(fee?f3(net)+' KWD exchanged after '+f3(fee)+' KWD fee':'No fee entered — '+f3(net)+' KWD exchanged'):'Amount paid includes the fee'}
 $('fxAmt').addEventListener('input',()=>{fxFill();const sal=ensureSal(),amt=parseFloat($('fxAmt').value)||0;S.acc.forEach(c=>{const el=$('ff_'+c.id);if(el)el.value=c.id==sal&&amt?String(Math.round(amt*1000)/1000):''})});
-$('fxRate').addEventListener('input',fxFill);
+$('fxRate').addEventListener('input',fxFill);$('fxFee').addEventListener('input',fxFill);
 $('fxFrom').addEventListener('input',e=>{const id=e.target.dataset.ff;if(!id)return;const sal=ensureSal();if(id==sal)return;const amt=parseFloat($('fxAmt').value)||0;let o=0;S.acc.forEach(c=>{if(c.id!=sal)o+=parseFloat(($('ff_'+c.id)||{}).value)||0});const el=$('ff_'+sal);if(el&&amt)el.value=String(Math.max(0,Math.round((amt-o)*1000)/1000))});
 $('fxAdd').onclick=()=>{const date=$('fxDate').value,amt=Math.round((parseFloat($('fxAmt').value)||0)*1000)/1000,rt=parseFloat($('fxRate').value)||0,err=m=>{$('fxErr').textContent=m};
  if(!date)return err('Choose the date.');if(!(amt>0))return err('Enter the amount to exchange.');if(!(rt>0))return err('Enter the exchange rate.');
  const from={};let sum=0;S.acc.forEach(c=>{const v=Math.round((parseFloat(($('ff_'+c.id)||{}).value)||0)*1000)/1000;if(v>0){from[c.id]=v;sum+=v}});
  if(S.acc.length&&Math.abs(sum-amt)>0.0005)return err(sum<amt?'Choose where the remaining '+f3(amt-sum)+' KWD comes from.':'The accounts add up to '+f3(sum)+' KWD, which is more than '+f3(amt)+' KWD.');
- err('');S.fx.push({id:fxId(),mon:S.mon,date,kwd:amt,rate:rt,note:$('fxNote').value.trim(),from});S.fxRate=rt;save();
- $('fxAmt').value='';$('fxNote').value='';fxFill();S.acc.forEach(c=>{const el=$('ff_'+c.id);if(el)el.value=''});renderFxList();renderTotals()};
+ const fee=Math.round((parseFloat($('fxFee').value)||0)*1000)/1000;if(fee<0||fee>=amt){err('The fee must be smaller than the amount paid.');return}
+ err('');S.fx.push({id:fxId(),mon:S.mon,date,kwd:amt,fee,rate:rt,note:$('fxNote').value.trim(),from});S.fxRate=rt;S.fxFee=fee;save();
+ $('fxAmt').value='';$('fxNote').value='';if(S.fxFee)$('fxFee').value=S.fxFee;fxFill();S.acc.forEach(c=>{const el=$('ff_'+c.id);if(el)el.value=''});renderFxList();renderTotals()};
 $('fxList').addEventListener('click',e=>{const id=e.target.dataset.fxdel;if(!id)return;const x=S.fx.find(a=>a.id==id);if(!x)return;ask('Delete this exchange?','This removes the exchange of '+f3(x.kwd)+' KWD and puts the money back into the accounts for '+MN[+x.mon.slice(5)-1]+' '+x.mon.slice(0,4)+'.','Delete exchange',()=>{S.fx=S.fx.filter(a=>a.id!=id);save();renderFxList();renderTotals();if(!$('fxpage').hidden)renderFxPage()})});
 $('fxAllBtn').onclick=()=>showTab('x');
-function renderFxPage(){const L2=[...S.fx].sort((a,b)=>(a.date||'').localeCompare(b.date||'')),tk=L2.reduce((a,x)=>a+x.kwd,0),ti=L2.reduce((a,x)=>a+fxInr(x.kwd,x.rate),0);
- let h='<tr><th>S.No</th><th>Date</th><th class="n">Amount exchanged (KWD)</th><th class="n">Exchange rate</th><th class="n">INR received</th><th>Taken from</th><th>Counted in</th><th>Details</th><th></th></tr>';
- h+=L2.map((x,i)=>`<tr><td>${i+1}</td><td><input type="date" value="${esc(x.date||'')}" data-fxd="${x.id}" aria-label="Date"></td><td class="n">${f3(x.kwd)}</td><td class="n"><input type="number" min="0" step="0.01" value="${esc(x.rate)}" data-fxr="${x.id}" aria-label="Exchange rate" style="width:90px"></td><td class="n">${n2(fxInr(x.kwd,x.rate))}</td><td>${Object.keys(x.from||{}).map(id=>esc(accName(id))+' '+f3(x.from[id])).join('<br>')||'–'}</td><td>${MN[+x.mon.slice(5)-1]} ${x.mon.slice(0,4)}</td><td><input type="text" maxlength="200" value="${esc(x.note||'')}" data-fxn="${x.id}" aria-label="Details" placeholder="Add details"></td><td><button type="button" class="icon-btn" data-fxdel2="${x.id}" aria-label="Delete exchange">×</button></td></tr>`).join('');
- if(!L2.length)h='<tr><td>No exchanges yet. Add one on the Expenditure page, in the box under Monthly expenses.</td></tr>';else h+=`<tr class="tot"><td></td><td><b>Total</b></td><td class="n"><b>${f3(tk)}</b></td><td class="n"><b>${tk?n2(ti/tk):'–'}</b><div class="sm">average</div></td><td class="n"><b>${n2(ti)}</b></td><td></td><td></td><td></td><td></td></tr>`;
+function renderFxPage(){const L2=[...S.fx].sort((a,b)=>(a.date||'').localeCompare(b.date||'')),tk=L2.reduce((a,x)=>a+x.kwd,0),tf=L2.reduce((a,x)=>a+(+x.fee||0),0),tn=tk-tf,ti=L2.reduce((a,x)=>a+fxInr(fxNet(x),x.rate),0);
+ let h='<tr><th>S.No</th><th>Date</th><th class="n">Amount paid (KWD)</th><th class="n">Fee (KWD)</th><th class="n">Exchange rate</th><th class="n">INR received</th><th>Taken from</th><th>Counted in</th><th>Details</th><th></th></tr>';
+ h+=L2.map((x,i)=>`<tr><td>${i+1}</td><td><input type="date" value="${esc(x.date||'')}" data-fxd="${x.id}" aria-label="Date"></td><td class="n"><input type="number" min="0" step="0.001" value="${esc(x.kwd)}" data-fxk="${x.id}" aria-label="Amount paid" style="width:100px"></td><td class="n"><input type="number" min="0" step="0.001" value="${x.fee?esc(x.fee):''}" placeholder="0" data-fxf="${x.id}" aria-label="Exchange fee" style="width:80px"></td><td class="n"><input type="number" min="0" step="0.01" value="${esc(x.rate)}" data-fxr="${x.id}" aria-label="Exchange rate" style="width:90px"></td><td class="n">${n2(fxInr(fxNet(x),x.rate))}</td><td>${Object.keys(x.from||{}).map(id=>esc(accName(id))+' '+f3(x.from[id])).join('<br>')||'–'}</td><td>${MN[+x.mon.slice(5)-1]} ${x.mon.slice(0,4)}</td><td><input type="text" maxlength="200" value="${esc(x.note||'')}" data-fxn="${x.id}" aria-label="Details" placeholder="Add details"></td><td><button type="button" class="icon-btn" data-fxdel2="${x.id}" aria-label="Delete exchange">×</button></td></tr>`).join('');
+ if(!L2.length)h='<tr><td>No exchanges yet. Add one on the Expenditure page, in the box under Monthly expenses.</td></tr>';else h+=`<tr class="tot"><td></td><td><b>Total</b></td><td class="n"><b>${f3(tk)}</b></td><td class="n"><b>${f3(tf)}</b></td><td class="n"><b>${tn?n2(ti/tn):'–'}</b><div class="sm">average</div></td><td class="n"><b>${n2(ti)}</b></td><td></td><td></td><td></td><td></td></tr>`;
  $('fxTable').innerHTML=h}
-$('fxTable').addEventListener('change',e=>{const d=e.target.dataset;const x=S.fx.find(a=>a.id==(d.fxd||d.fxr||d.fxn));if(!x)return;if(d.fxd){x.date=e.target.value}if(d.fxr){const v=parseFloat(e.target.value)||0;if(v>0)x.rate=v}if(d.fxn)x.note=e.target.value.trim();save();setTimeout(()=>{renderFxPage();renderFxList()},0)});
+$('fxTable').addEventListener('change',e=>{const d=e.target.dataset;const x=S.fx.find(a=>a.id==(d.fxd||d.fxr||d.fxn||d.fxf||d.fxk));if(!x)return;if(d.fxf){const v=Math.round(Math.max(0,parseFloat(e.target.value)||0)*1000)/1000;if(v<x.kwd)x.fee=v}if(d.fxk){const v=Math.round((parseFloat(e.target.value)||0)*1000)/1000,dl=Math.round((v-x.kwd)*1000)/1000;x.from=x.from||{};const ks=Object.keys(x.from),sal=ensureSal(),k=ks.includes(String(sal))?String(sal):ks[0];if(v>(+x.fee||0)&&k&&x.from[k]+dl>=0){x.from[k]=Math.round((x.from[k]+dl)*1000)/1000;x.kwd=v}else if(v>(+x.fee||0)&&!k){x.kwd=v}}if(d.fxd){x.date=e.target.value}if(d.fxr){const v=parseFloat(e.target.value)||0;if(v>0)x.rate=v}if(d.fxn)x.note=e.target.value.trim();save();setTimeout(()=>{renderFxPage();renderFxList()},0)});
 $('fxTable').addEventListener('click',e=>{const id=e.target.dataset.fxdel2;if(!id)return;const x=S.fx.find(a=>a.id==id);if(!x)return;ask('Delete this exchange?','This removes the exchange of '+f3(x.kwd)+' KWD and puts the money back into the accounts for '+MN[+x.mon.slice(5)-1]+' '+x.mon.slice(0,4)+'.','Delete exchange',()=>{S.fx=S.fx.filter(a=>a.id!=id);save();renderFxPage();renderFxList();renderTotals()})});
-$('fxCsv').onclick=()=>{const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',L2=[...S.fx].sort((a,b)=>(a.date||'').localeCompare(b.date||''));const txt='\ufeff'+[['S.No','Date','Amount exchanged (KWD)','Exchange rate','INR received','Taken from','Counted in','Details'].map(q).join(',')].concat(L2.map((x,i)=>[i+1,x.date,x.kwd,x.rate,fxInr(x.kwd,x.rate),Object.keys(x.from||{}).map(id=>accName(id)+' '+x.from[id]).join('; '),x.mon,x.note||''].map(q).join(','))).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download='shiftpay-exchanges-'+today()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)};
+$('fxCsv').onclick=()=>{const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',L2=[...S.fx].sort((a,b)=>(a.date||'').localeCompare(b.date||''));const txt='\ufeff'+[['S.No','Date','Amount paid (KWD)','Fee (KWD)','Exchanged after fee (KWD)','Exchange rate','INR received','Taken from','Counted in','Details'].map(q).join(',')].concat(L2.map((x,i)=>[i+1,x.date,x.kwd,+x.fee||0,fxNet(x),x.rate,fxInr(fxNet(x),x.rate),Object.keys(x.from||{}).map(id=>accName(id)+' '+x.from[id]).join('; '),x.mon,x.note||''].map(q).join(','))).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download='shiftpay-exchanges-'+today()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)};
 function renderCards(){$('cardList').innerHTML=S.cards.map(c=>`<div class="activity-row"><div class="entry-main"><div class="entry-title">${esc(c.name)}</div><div class="row"><div><label for="cl_${c.id}">Total limit (KWD)</label><input id="cl_${c.id}" type="number" min="0" step="0.001" data-limit="${c.id}" value="${esc(c.limit??'')}" placeholder="0.000"></div><div><label for="cr_${c.id}">Limit left (KWD)</label><input id="cr_${c.id}" type="number" min="0" step="0.001" data-rem="${c.id}" value="${esc(S.pm[S.mon]?.cc?.[c.id]??'')}" placeholder="${effCc(c.id)==null?'0.000':f3(effCc(c.id))}"></div></div></div><div class="entry-tools"><button type="button" class="delete-entry" data-cdel="${c.id}" title="Delete card" aria-label="Delete ${esc(c.name)}">×</button></div></div>`).join('')}
 function renderAccounts(){const prev=S.pm[pk(S.mon)]?.res||{},r0=S.pm[S.mon]||{},sal=ensureSal(),multi=S.acc.length>1;
  $('accountList').innerHTML=S.acc.map(c=>`<div class="activity-row"><div class="entry-main"><div class="entry-title">${esc(c.name)}</div>${multi?`<label class="salopt"><input type="radio" name="salacc" data-sal="${c.id}"${c.id==sal?' checked':''}> Salary account (keeps the money that is left)</label>`:''}<label for="op_${c.id}">Opening balance this month (KWD)</label><input id="op_${c.id}" type="number" min="0" step="0.001" data-open="${c.id}" value="${esc(r0.open?.[c.id]??'')}" placeholder="${f3(prev[c.id]||0)}"><p class="hint" style="margin:4px 0 0">Leave empty to use the plan. Type the real bank balance to see the difference on the Data page.</p></div><div class="entry-tools"><button type="button" class="delete-entry" data-adel="${c.id}" title="Delete account" aria-label="Delete ${esc(c.name)}">×</button></div></div>`).join('');
@@ -1087,7 +1102,7 @@ function renderTotals(){
  const neg=rows.filter(r=>r.cl<0).map(r=>r.c.name);if(neg.length)msg+=(msg?' ':'')+(neg.join(', ')+' would go below zero.');
  $('short').textContent=msg;$('short').className=(SHORT.need||neg.length)?'neg':'sm';$('shortAct').innerHTML=(SHORT.need&&all.some(x=>x.max>0.0005))?'<button class="btn" type="button" id="tpop">Transfer money to the salary account</button>':''}
 function syncExp(){const r=S.pm[S.mon]||{};for(const id in FM){const f=FM[id];$(id).value=r[f]??'';$(id).placeholder=REC.includes(f)?f3(eff(f)):'0.000'}
- if(!$('fxRate').value&&S.fxRate)$('fxRate').value=S.fxRate;fxFill();renderCards();renderAccounts();renderActs();renderOth();renderFxFrom();renderFxList();renderTotals()}
+ if(!$('fxRate').value&&S.fxRate)$('fxRate').value=S.fxRate;if(!$('fxFee').value&&S.fxFee)$('fxFee').value=S.fxFee;fxFill();renderCards();renderAccounts();renderActs();renderOth();renderFxFrom();renderFxList();renderTotals()}
 const sg=x=>(x<0?'−':x>0?'+':'')+f3(Math.abs(x));
 function diffCell(d){const a=d.acc.filter(x=>x.d!=null&&x.d!==undefined);if(!a.length)return'–';const t=a.reduce((n,x)=>n+x.d,0);return`<b class="${t<0?'neg':''}">${sg(t)}</b>`+(a.length>1?a.map(x=>`<div class="sm">${esc(x.n)} ${sg(x.d)}</div>`).join(''):'')}
 const DET=new Set();
@@ -2585,7 +2600,10 @@ function fxLinks(){
   return map;
 }
 const fxMatch=t=>fxLinks().get(t)||null;
-function usualFee(){ const f=[...fxLinks().values()].map(v=>v.fee).filter(x=>x>0.0005).sort((a,b)=>a-b); return f.length?f[Math.floor(f.length/2)]:0; }
+function usualFee(){ // the fee you usually pay: from your own entries first, otherwise from SMS-vs-entry differences
+  let f=((PAY&&PAY.S.fx)||[]).map(x=>+x.fee||0).filter(x=>x>0.0005);
+  if(!f.length) f=[...fxLinks().values()].map(v=>v.fee).filter(x=>x>0.0005);
+  f.sort((a,b)=>a-b); return f.length?f[Math.floor(f.length/2)]:(PAY&&+PAY.S.fxFee)||0; }
 function catTotals(V){ const m={}; (V.spend||[]).forEach(t=>{ m[t.category]=(m[t.category]||0)+t.spendAmt; });
   return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
 function cycleForPayMonth(m){ return expCycles().find(c=>c.salaryTx&&payMonthOfCredit(c.salaryTx.date)===m)||null; }
@@ -2797,15 +2815,15 @@ function refreshFxCard(){
   const n=ensure("smsFx","fxpage","afterbegin","card sms-card"); if(!n) return;
   const R=remits().slice(0,25);
   if(!R.length){ n.innerHTML=`<h2>Transfers in bank SMS</h2><p class="sm">${expTx().length?"No money transfers home found in your bank SMS yet.":"Load your bank SMS in Expenses to find your transfers home automatically."}</p>`; return; }
-  n.innerHTML=`<h2>Transfers in bank SMS</h2><p class="sm">Found automatically. Already in your list? It shows ✓ — even if the bank took a little more for the exchange fee. Otherwise tap <b>Add</b> and type the rate. It is added to the month selected on the Salary tab (${esc(monName(PAY.S.mon))}).</p>`+
-   R.map((t,i)=>{ const m=fxMatch(t); return `<div class="sms-row"><div class="t">${esc(t.merchant||"Transfer")}<small>${dShort(t.date)} ${t.date.getFullYear()}</small></div><b>${k3(t.amount)}</b>${m?`<span class="ok">✓ in list${m.fee>0.0005?`<br><small style="font-weight:400;color:var(--i-2)">fee ${k3(m.fee)}</small>`:""}</span>`:`<button class="btn" type="button" data-fx="${i}" style="min-height:34px;padding:6px 14px">Add</button>`}</div>`; }).join("");
+  n.innerHTML=`<h2>Transfers in bank SMS</h2><p class="sm">Found automatically. Already in your list? It shows ✓. Otherwise tap <b>Add</b>: the amount paid and your usual fee are filled in — check the fee and type the rate. It is added to the month selected on the Salary tab (${esc(monName(PAY.S.mon))}).</p>`+
+   R.map((t,i)=>{ const m=fxMatch(t); return `<div class="sms-row"><div class="t">${esc(t.merchant||"Transfer")}<small>${dShort(t.date)} ${t.date.getFullYear()}</small></div><b>${k3(t.amount)}</b>${m?`<span class="ok">✓ in list${(+m.fx.fee||m.fee)>0.0005?`<br><small style="font-weight:400;color:var(--i-2)">fee ${k3(+m.fx.fee||m.fee)}</small>`:""}</span>`:`<button class="btn" type="button" data-fx="${i}" style="min-height:34px;padding:6px 14px">Add</button>`}</div>`; }).join("");
   n._list=R;
 }
 /* Month name beside every Expenditure heading, so it's always clear which payroll month you're looking at. */
 function refreshMonthTags(){
   const sec=PAYM.root.getElementById("expenditure"); if(!sec) return; const m=monName(PAY.S.mon);
   sec.querySelectorAll("h2,h3").forEach(h=>{ if(h.closest("#smsSpend")) return; let t=h.querySelector(".mtag");
-    if(!t){ t=document.createElement("span"); t.className="mtag"; h.appendChild(t); } if(t.textContent!==" · "+m) t.textContent=" · "+m; });
+    if(!t){ t=document.createElement("span"); t.className="mtag"; h.appendChild(t); } if(t.textContent!==m) t.textContent=m; });
 }
 function refreshLinks(){ if(!PAY||!PAYM) return; try{ calcCache.clear(); linkCache=null; refreshMonthTags(); refreshSalaryLine(); refreshSpendCard(); refreshFxCard(); }catch(e){ console.error(e); } }
 if(PAYM&&PAYM.root){
@@ -2815,10 +2833,11 @@ if(PAYM&&PAYM.root){
     const t=(PAYM.root.getElementById("smsFx")._list||[])[+b.dataset.fx]; if(!t) return;
     go("expend");
     const el=id=>PAYM.root.getElementById(id);
-    const fee=usualFee(), amt=Math.round((t.amount-(fee<t.amount?fee:0))*1000)/1000;
-    el("fxDate").value=dayKey(t.date); el("fxAmt").value=String(amt);
+    const fee=usualFee();
+    el("fxDate").value=dayKey(t.date); el("fxAmt").value=String(Math.round(t.amount*1000)/1000);
+    if(el("fxFee")&&fee&&fee<t.amount){ el("fxFee").value=String(fee); el("fxFee").dispatchEvent(new Event("input",{bubbles:true})); }
     el("fxAmt").dispatchEvent(new Event("input",{bubbles:true}));
-    if(!el("fxNote").value) el("fxNote").value="From bank SMS: "+(t.merchant||"transfer")+" "+k3(t.amount)+(fee?" (incl. usual fee "+k3(fee)+")":"");
+    if(!el("fxNote").value) el("fxNote").value="From bank SMS: "+(t.merchant||"transfer");
     const card=el("fxCard"); if(card) card.scrollIntoView({block:"start"});
     setTimeout(()=>{ try{ el("fxRate").focus(); }catch(e){} },300);
   });
