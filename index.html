@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<!-- Money app v2.3 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
+<!-- Money app v2.4 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Money</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -288,6 +288,8 @@ input,select{min-width:0;max-width:100%}
 /* iPhone date boxes ignore their width unless told otherwise */
 input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;text-align:left}
 ::-webkit-date-and-time-value{text-align:left}
+
+.mtag{font-weight:400;color:var(--i-2)}
 </style><div class="root"><div class="wrap">
 <h1>Shift pay calculator</h1><p class="sub">Estimate your monthly salary and plan your expenditure. <span style="opacity:.55;font-size:11px">Version 18 Nov 2026 (C)</span></p>
 <div id="banner" class="banner" hidden></div>
@@ -735,7 +737,7 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 </div></template>
 <script>
 "use strict";
-const APP_VERSION="2.3";
+const APP_VERSION="2.4";
 /* Each engine sees only its own compartment when it looks up parts of the page. */
 function mount(id){
   const host=document.getElementById(id), root=host.attachShadow({mode:"open"});
@@ -2780,8 +2782,12 @@ function refreshSalaryLine(){
 function refreshSpendCard(){
   const n=ensure("smsSpend","expenditure","afterbegin","exp-card sms-card"); if(!n) return; n.style.marginBottom="16px";
   const C=expCycles(); if(!C.length){ n.innerHTML=`<h2>Real spending (bank SMS)</h2><p class="hint">Load your bank SMS in Expenses to see what you actually spent next to this plan.</p>`; return; }
-  const c=cycleForPayMonth(PAY.S.mon)||C[0], V=EXP.computeView(c), L=catTotals(V).slice(0,4);
-  n.innerHTML=`<h2>Real spending · bank SMS <small>${esc(c.label||"")}</small></h2>
+  const pm=PAY.S.mon, sal=MONL[+pm.slice(5)-1]+" salary", c=cycleForPayMonth(pm);
+  if(!c){ n.innerHTML=`<h2>Real spending · bank SMS</h2><p class="hint">Your <b>${sal}</b> hasn't arrived in your bank SMS yet. Once it's credited, what you spend from it shows here.</p>`; return; }
+  const V=EXP.computeView(c), L=catTotals(V).slice(0,4), last=c.end?new Date(c.end.getTime()-864e5):null;
+  const span=dShort(c.start)+" – "+(last?dShort(last):"today");
+  n.innerHTML=`<h2>Real spending · bank SMS</h2>
+   <p class="hint" style="margin:4px 0 0">Your <b>${sal}</b> (paid ${dShort(c.salaryTx.date)}) pays for <b>${span}</b>${c.end?"":", until the next salary arrives"}.</p>
    <div class="sms-grid"><div><span>Spent</span><b>${k3(V.spent)}</b></div><div><span>Sent home</span><b>${k3(V.sentAmt)}</b></div>
    <div><span>Loan paid</span><b>${k3(V.loanAmt)}</b></div><div><span>Money now</span><b>${k3(V.current!=null?V.current:V.opening)}</b></div></div>
    ${L.map(([k,a])=>`<div class="sms-row"><span>${EXP.catIcon(k)}</span><div class="t">${esc(k)}</div><b>${k3(a)}</b></div>`).join("")}
@@ -2795,7 +2801,13 @@ function refreshFxCard(){
    R.map((t,i)=>{ const m=fxMatch(t); return `<div class="sms-row"><div class="t">${esc(t.merchant||"Transfer")}<small>${dShort(t.date)} ${t.date.getFullYear()}</small></div><b>${k3(t.amount)}</b>${m?`<span class="ok">✓ in list${m.fee>0.0005?`<br><small style="font-weight:400;color:var(--i-2)">fee ${k3(m.fee)}</small>`:""}</span>`:`<button class="btn" type="button" data-fx="${i}" style="min-height:34px;padding:6px 14px">Add</button>`}</div>`; }).join("");
   n._list=R;
 }
-function refreshLinks(){ if(!PAY||!PAYM) return; try{ calcCache.clear(); linkCache=null; refreshSalaryLine(); refreshSpendCard(); refreshFxCard(); }catch(e){ console.error(e); } }
+/* Month name beside every Expenditure heading, so it's always clear which payroll month you're looking at. */
+function refreshMonthTags(){
+  const sec=PAYM.root.getElementById("expenditure"); if(!sec) return; const m=monName(PAY.S.mon);
+  sec.querySelectorAll("h2,h3").forEach(h=>{ if(h.closest("#smsSpend")) return; let t=h.querySelector(".mtag");
+    if(!t){ t=document.createElement("span"); t.className="mtag"; h.appendChild(t); } if(t.textContent!==" · "+m) t.textContent=" · "+m; });
+}
+function refreshLinks(){ if(!PAY||!PAYM) return; try{ calcCache.clear(); linkCache=null; refreshMonthTags(); refreshSalaryLine(); refreshSpendCard(); refreshFxCard(); }catch(e){ console.error(e); } }
 if(PAYM&&PAYM.root){
   PAYM.root.addEventListener("click",e=>{
     const o=e.target.closest("[data-sms]"); if(o){ go("exp"); return; }
@@ -2811,7 +2823,7 @@ if(PAYM&&PAYM.root){
     setTimeout(()=>{ try{ el("fxRate").focus(); }catch(e){} },300);
   });
   const net=PAYM.root.getElementById("net"); let tm=null;
-  if(net) new MutationObserver(()=>{ clearTimeout(tm); tm=setTimeout(()=>{ calcCache.clear(); refreshSalaryLine(); refreshSpendCard(); },60); }).observe(net,{childList:true,subtree:true,characterData:true});
+  if(net) new MutationObserver(()=>{ clearTimeout(tm); tm=setTimeout(()=>{ calcCache.clear(); refreshMonthTags(); refreshSalaryLine(); refreshSpendCard(); },60); }).observe(net,{childList:true,subtree:true,characterData:true});
 }
 
 /* Backups live in More › Backup & sync; hide the duplicate laptop sections inside Expenses settings. */
