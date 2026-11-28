@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<!-- Money app v2.8 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
+<!-- Money app v2.9 · Shift Pay + Expenses in one app. Security rule: this page can't send anything to the internet. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Money</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -141,6 +141,27 @@ main{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) calc(64
 .topbar button{border:0;background:rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 12px;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap}
 body.hasbar main{padding-top:calc(env(safe-area-inset-top,0px) + 38px)}
 [hidden]{display:none!important}
+/* v2.9 Home "This month": aligned figure rows */
+.krow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:.5px solid var(--i-sep)}
+.krow:first-child{padding-top:0}
+.kl{font-size:15px;color:var(--i-label);min-width:0}
+.kl small{display:block;font-size:12.5px;color:var(--i-2);margin-top:2px}
+.kv{font:700 22px/1.15 var(--i-dfont);font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em}
+.kstart{font-size:13px;color:var(--i-2);padding-top:10px;line-height:1.35}
+.kstart b{font-weight:600;color:var(--i-label);font-variant-numeric:tabular-nums}
+/* v2.9 privacy: eye button and blurred amounts */
+.hashbtn{position:relative;padding-right:64px}
+.eyebtn{position:absolute;right:16px;bottom:8px;width:40px;height:40px;border-radius:20px;border:0;background:var(--i-fill);color:var(--i-tint);display:grid;place-items:center;cursor:pointer;padding:0}
+.eyebtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.eyebtn .ec{display:none}
+html.priv .eyebtn{background:var(--i-tint);color:#fff}
+html.priv .eyebtn .eo{display:none} html.priv .eyebtn .ec{display:block}
+html.priv .amt:not(.peek):not(:focus){filter:blur(.32em);-webkit-user-select:none;user-select:none}
+.amt{transition:filter .18s}
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:51px;height:31px;border-radius:16px;background:rgba(120,120,128,.32);position:relative;cursor:pointer;transition:background .2s;margin:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform .2s}
+.sw:checked{background:#34c759} .sw:checked::after{transform:translateX(20px)}
+#lockMore .lockmsg,#lockStep2 .lockmsg{text-align:center}
 
 </style>
 </head>
@@ -148,7 +169,7 @@ body.hasbar main{padding-top:calc(env(safe-area-inset-top,0px) + 38px)}
 <div class="sbar" aria-hidden="true"></div>
 <main>
   <section class="page" id="pg-home">
-    <header class="lt"><div class="ldate" id="homeDate"></div><h1>Money</h1></header>
+    <header class="lt hashbtn"><div class="ldate" id="homeDate"></div><h1>Money</h1><button type="button" class="eyebtn" id="privBtn" aria-pressed="false" aria-label="Hide amounts"><svg class="eo" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="ec" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></header>
     <div id="home"></div>
   </section>
   <section class="page" id="pg-pay" hidden>
@@ -176,7 +197,7 @@ body.hasbar main{padding-top:calc(env(safe-area-inset-top,0px) + 38px)}
     <p class="lastsync" id="lastSync"></p>
     <div id="lockStep1">
       <button type="button" class="pbtn" id="syncLoad">⇅ Sync from iCloud</button>
-      <p class="lhint">In <b>iCloud Drive › Shortcuts</b> tap <b>Select</b>, choose <b>Total.txt</b> and <b>expense_data.json</b>, then <b>Open</b>.</p>
+      <p class="lhint">In <b>iCloud Drive › Shortcuts</b> tap <b>Select</b>, choose <b>Total.txt</b> and <b>expense_data.json</b>, then <b>Open</b>. Or choose one file, then the other.</p>
     </div>
     <div id="lockChoice" hidden>
       <p class="lockmsg"><b>First sync:</b> Shift Pay is different on this iPhone and in the iCloud file. Which one is up to date?</p>
@@ -185,6 +206,12 @@ body.hasbar main{padding-top:calc(env(safe-area-inset-top,0px) + 38px)}
         <button type="button" class="choice" id="chHere"><b>This iPhone</b><span id="chHereTxt"></span></button>
       </div>
       <p class="lhint">This is asked only once. From then on, changes from both devices are combined automatically.</p>
+    </div>
+    <div id="lockMore" hidden>
+      <p class="lockmsg" id="moreMsg"></p>
+      <button type="button" class="pbtn" id="moreBtn">Choose file</button>
+      <p class="lhint">In <b>iCloud Drive › Shortcuts</b>, tap the file.</p>
+      <button type="button" class="linkb" id="moreSkip" hidden>Skip — no new SMS this time</button>
     </div>
     <div id="lockStep2" hidden>
       <p class="lockmsg" id="step2Msg">Loaded ✓ Now save this iPhone's changes back to iCloud.</p>
@@ -195,7 +222,7 @@ body.hasbar main{padding-top:calc(env(safe-area-inset-top,0px) + 38px)}
     <button type="button" class="linkb" id="lockClose">Not now</button>
   </div>
 </div>
-<input type="file" id="syncFile" multiple accept=".txt,.json,text/plain,application/json" hidden>
+<input type="file" id="syncFile" multiple hidden>
 <div class="topbar" id="dirtyBar" hidden><span id="dirtyTxt">Changes not backed up</span><button type="button" id="dirtySync">⇅ Sync</button></div>
 
 <template id="pay-tpl"><style>
@@ -811,7 +838,7 @@ input[type=date],input[type=month],input[type=time],input[type=datetime-local]{-
 </div></template>
 <script>
 "use strict";
-const APP_VERSION="2.8";
+const APP_VERSION="2.9";
 /* Each engine sees only its own compartment when it looks up parts of the page. */
 function mount(id){
   const host=document.getElementById(id), root=host.attachShadow({mode:"open"});
@@ -1260,8 +1287,9 @@ try{ EXP=(function(document){ let __api=null;
 (function(){
 "use strict";
 const CUR="KWD";
-const APP_VERSION="3.9", APP_DATE="25 Nov 2026";
+const APP_VERSION="3.10", APP_DATE="28 Nov 2026";
 const CHANGELOG=[
+ ["3.10","28 Nov 2026","Card figures shared with the iPhone Home screen (available limit incl. bills paid)"],
  ["3.9","26 Nov 2026","expense_data.json can also carry Shift Pay (one file for everything) · safer rule editor"],
  ["3.7","25 Nov 2026","An account SMS that mentions a credit card (bill payment) stays an account · credit card shows your bill payment straight away · loan payments never counted as spending · chart info box hides when you lift your finger"],
  ["3.6","25 Nov 2026","Works inside the iPhone app (with Shift Pay): new SMS arrive from the Open Expenses shortcut; security rule blocks the page from sending anything to the internet."],
@@ -2147,21 +2175,25 @@ $("catFilter").addEventListener("change",()=>renderTx(lastView));
 $("tx").addEventListener("click",e=>{ const r=e.target.closest(".trow"); if(!r) return; const t=ALL.find(x=>x.key===r.dataset.k); if(t) openTx(t); });
 
 /* ---------- accounts panel ---------- */
+/* One account's figures for the period: last balance (cards: available limit, plus bills paid since its last SMS), money out/in. */
+function acctInfo(id,V){
+  const w=V.w, ids=accountList(), upto=(w&&w.end)||new Date(8.64e15);
+  const all=ALL.filter(t=>t.acct===id&&t.date&&t.date<upto), inw=V.inW.filter(t=>t.acct===id);
+  const isCard=String(id).startsWith("card"), lastBal=all.filter(t=>t.balance!=null).sort((a,b)=>b.date-a.date)[0];
+  const out=inw.filter(t=>t.type==="debit").reduce((s,t)=>s+t.amount,0), inn=inw.filter(t=>t.type==="credit").reduce((s,t)=>s+t.amount,0);
+  // bill payments made from a bank account after the card's last SMS: the card has that much more limit now
+  let paid=0, paidLast=null;
+  if(isCard&&lastBal){ const cards=ids.filter(x=>String(x).startsWith("card")), l4=String(id).replace(/\D/g,"").slice(-4);
+    ALL.filter(t=>t.cardPay&&t.type==="debit"&&t.date&&t.acct&&t.acct.startsWith("acct")&&t.date>lastBal.date&&t.date<upto&&!(t.pair&&t.pair.acct===id))
+      .forEach(t=>{ if(cards.length===1||(l4&&String(t.sms).includes(l4))){ paid+=t.amount; if(!paidLast||t.date>paidLast) paidLast=t.date; } }); }
+  return {id,name:acctName(id),isCard,lastBal,paid,paidLast,left:lastBal?lastBal.balance+paid:null,asOf:lastBal?(paidLast||lastBal.date):null,out,inn};
+}
 function renderAccounts(V){
   const w=V.w, ids=accountList(); if(!w||!ids.length){ $("accs").innerHTML=""; return; }
-  const upto=w.end||new Date(8.64e15);
-  $("accs").innerHTML=ids.map(id=>{
-    const all=ALL.filter(t=>t.acct===id&&t.date&&t.date<upto), inw=V.inW.filter(t=>t.acct===id);
-    const isCard=id.startsWith("card"), lastBal=all.filter(t=>t.balance!=null).sort((a,b)=>b.date-a.date)[0];
-    const out=inw.filter(t=>t.type==="debit").reduce((s,t)=>s+t.amount,0), inn=inw.filter(t=>t.type==="credit").reduce((s,t)=>s+t.amount,0);
-    // bill payments made from a bank account after the card's last SMS: the card has that much more limit now
-    let paid=0, paidLast=null;
-    if(isCard&&lastBal){ const cards=ids.filter(x=>x.startsWith("card")), l4=String(id).replace(/\D/g,"").slice(-4);
-      ALL.filter(t=>t.cardPay&&t.type==="debit"&&t.date&&t.acct&&t.acct.startsWith("acct")&&t.date>lastBal.date&&t.date<upto&&!(t.pair&&t.pair.acct===id))
-        .forEach(t=>{ if(cards.length===1||(l4&&String(t.sms).includes(l4))){ paid+=t.amount; if(!paidLast||t.date>paidLast) paidLast=t.date; } }); }
+  $("accs").innerHTML=ids.map(id=>{ const a=acctInfo(id,V), isCard=a.isCard, lastBal=a.lastBal, paid=a.paid, out=a.out, inn=a.inn;
     return '<div class="acc'+(txAcct===id?" on":"")+'" data-a="'+esc(id)+'"><div class="h">'+(isCard?"💳":"🏦")+' '+esc(acctName(id))+'</div>'+
-      '<div class="b num">'+(lastBal?fmtK(lastBal.balance+paid):"—")+'</div>'+
-      '<div class="s">'+(isCard?"available limit":"balance")+(lastBal?" · "+dshort(paidLast||lastBal.date):"")+(paid?' · incl. bill paid '+fmt(paid):"")+'</div>'+
+      '<div class="b num">'+(lastBal?fmtK(a.left):"—")+'</div>'+
+      '<div class="s">'+(isCard?"available limit":"balance")+(lastBal?" · "+dshort(a.asOf):"")+(paid?' · incl. bill paid '+fmt(paid):"")+'</div>'+
       '<div class="s num" style="margin-top:4px">'+(isCard?"Spent "+fmt(out)+(inn?" · paid "+fmt(inn):""):"Out "+fmt(out)+" · In "+fmt(inn))+' this '+(w.kind==="year"?"year":w.kind==="custom"?"period":"month")+'</div></div>';
   }).join("");
 }
@@ -2617,6 +2649,7 @@ showSync(); if(HAS_FS) connectFolder(false);
 ;__api={get S(){return S},get ALL(){return ALL},get CYCLES(){return CYCLES},computeView:w=>computeView(w),
  fmt:n=>fmt(n),catIcon:c=>catIcon(c),catColor:c=>catColor(c),openSettings:()=>openSettings(),openBudgets:()=>openBudgets(),
  saveToICloud:()=>saveToICloud(),update:()=>$("updChip").click(),el:id=>$(id),
+ cards:V=>accountList().filter(id=>String(id).startsWith("card")).map(id=>acctInfo(id,V)),
  buildAll:()=>buildAll(),importFiles:fs=>onFiles({target:{files:fs,value:""}})};
 })();
 
@@ -2845,9 +2878,15 @@ function monthCard(){
   if(bud){ const p=V.spent/bud, pace=V.total?V.elapsed/V.total:1, cls=p>1?"bad":p>pace+0.1?"warn":"";
     budHtml=`<div class="pbar"><i class="${cls}" style="width:${Math.min(100,p*100).toFixed(1)}%"></i></div><div class="note">${k3(Math.max(0,bud-V.spent))} left of ${k3(bud)} budget${V.daysLeft?" · "+V.daysLeft+(V.daysLeft===1?" day":" days")+" to go":""}</div>`; }
   else if(V.daysLeft) budHtml=`<div class="note" style="margin-top:8px">${V.daysLeft} ${V.daysLeft===1?"day":"days"} until next salary (about)</div>`;
+  let cards=[]; try{ cards=(EXP.cards?EXP.cards(V):[]).filter(c=>c.left!=null); }catch(e){}
+  const row=(lab,note,val,cls)=>`<div class="krow${cls?" "+cls:""}"><div class="kl">${lab}${note?`<small>${esc(note)}</small>`:""}</div><div class="kv">${val}</div></div>`;
+  const l4=id=>{ const d=String(id).replace(/\D/g,"").slice(-4); return d?"•••"+d:""; };
+  const money=V.current!=null?V.current:V.opening;
   return `<div class="gh">${esc(C[0].label||"This month")}</div><div class="grp"><button class="cell sumcard" data-go="exp" style="display:block">
-    <div class="lab">Money now</div><div class="big">${k3(V.current!=null?V.current:V.opening)}<small>KWD</small></div><div class="note">${esc(V.current!=null?V.curNote:V.openNote)}</div>
-    <div class="two"><div><div class="lab">Spent</div><div class="mid">${k3(V.spent)}</div></div><div><div class="lab">Started with</div><div class="mid">${k3(V.opening)}</div></div></div>
+    ${row("Money now",V.current!=null?V.curNote:V.openNote,money!=null?k3(money):"—")}
+    ${cards.map(c=>row("Card "+l4(c.id)+" left","available limit · "+dShort(c.asOf)+(c.paid?" · incl. bill paid":""),k3(c.left))).join("")}
+    ${row("Spent","this month",k3(V.spent))}
+    <div class="kstart">Started with <b>${V.opening!=null?k3(V.opening):"—"}</b>${V.openNote?" · "+esc(V.openNote.replace(/\s\d{1,2}:\d{2}/,"").replace(/^on salary day · /,"salary day ")):""}</div>
     ${budHtml}</button></div>`;
 }
 function salaryCard(){
@@ -2904,7 +2943,12 @@ function renderMore(){
    ${cell("⚙️","#8e8e93","Expenses settings","Categories, rules, learned merchants",'data-act="settings"')}</div>
   <div class="gh">Appearance</div><div class="grp"><div class="cell static"><div class="look" id="look" style="flex:1">${["light","dark","auto"].map(v=>`<button type="button" data-look="${v}" aria-pressed="${getLook()===v}">${{light:"☀️ Light",dark:"🌙 Dark",auto:"Automatic"}[v]}</button>`).join("")}</div></div></div>
   <p class="gf">Automatic follows your iPhone's Dark Mode.</p>
-  <div class="gh">About</div><div class="grp">
+  <div class="gh">Privacy</div><div class="grp">
+   <label class="cell static"><div class="t">Hide amounts<small>Same as 👁 on Home</small></div><input type="checkbox" class="sw" data-priv="on" ${PRIV.on?"checked":""}></label>
+   <label class="cell static"><div class="t">Always start hidden<small>Hidden every time Money opens</small></div><input type="checkbox" class="sw" data-priv="start" ${PRIV.opt("start")?"checked":""}></label>
+   <label class="cell static"><div class="t">Hide when leaving Money<small>Hides amounts as you switch apps</small></div><input type="checkbox" class="sw" data-priv="leave" ${PRIV.opt("leave")?"checked":""}></label></div>
+  <p class="gf">While amounts are hidden, tap one to see it for 3 seconds.</p>
+  <div class="gh">About</div><div class="grp" data-noamt>
    <div class="cell static"><div class="t">Money</div><span class="v">${APP_VERSION}</span></div>
    <div class="cell static"><div class="t">Expenses</div><span class="v">${esc(expV)}</span></div>
    <div class="cell static"><div class="t">Shift Pay</div><span class="v">${esc(payV.replace(/^Version\s*/,""))}</span></div></div>
@@ -3045,38 +3089,50 @@ function updBars(){ const never=!lastSync(), show=$s("lock").hidden&&(never||isD
   $s("dirtyTxt").textContent=never?"Not synced with iCloud yet":"Changes not backed up";
   $s("dirtyBar").hidden=!show; document.body.classList.toggle("hasbar",show); }
 setInterval(updBars,2500);
-function step(n){ $s("lockStep1").hidden=n!==1; $s("lockChoice").hidden=n!=="choice"; $s("lockStep2").hidden=n!==2; if(n!=="err") $s("lockErr").hidden=true; }
+function step(n){ $s("lockStep1").hidden=n!==1; $s("lockChoice").hidden=n!=="choice"; $s("lockStep2").hidden=n!==2; $s("lockMore").hidden=n!=="more"; if(n!=="err") $s("lockErr").hidden=true; }
 function syncErr(msg){ $s("lockErr").innerHTML=esc(msg)+'<br><span style="color:var(--i-2)">Try again, or tap <b>Not now</b> and keep using Money — the bar stays until it syncs.</span>'; step(1); $s("lockErr").hidden=false; }
 function setupDlg(){ return PAYM&&PAYM.root&&PAYM.root.getElementById("sdlg"); }
 function openSync(){
   /* set-up waits until after sync */ const sd=setupDlg(); if(sd&&sd.open){ sd.close(); setupWaiting=true; }
   const L=$s("lock"); L.classList.add("sheet");
   $s("lastSync").textContent="Last synced: "+lastSyncText();
-  step(1); L.hidden=false; updBars(); }
+  syncGot={json:false,txt:false}; step(1); L.hidden=false; updBars(); }
 function closeSync(){ $s("lock").hidden=true; updBars();
   if(setupWaiting){ setupWaiting=false; const sd=setupDlg(); if(sd&&!(PAY&&Object.keys(PAY.S.fy||{}).length)){ try{ sd.showModal(); }catch(e){} } } if(cur==="home") renderHome(); if(cur==="more") renderMore(); }
 function finishSync(msg){ ls.set("money_last_sync",String(Date.now())); if(PAY) try{ PAY.markBackedUp(); }catch(e){} closeSync(); toast(msg); }
 $s("syncLoad").onclick=()=>{ $s("lockErr").hidden=true; $s("syncFile").click(); };
-let dirtyBefore=false;
+let dirtyBefore=false, syncGot={json:false,txt:false};
+/* Sync is forgiving: choose both files at once, or one and then the other. */
 $s("syncFile").addEventListener("change",async e=>{
   const files=[...e.target.files]; e.target.value="";
-  if(!files.length) return syncErr("No files were chosen.");
+  if(!files.length) return syncErr("No file was chosen.");
   const json=files.find(f=>/\.json$/i.test(f.name)), txt=files.filter(f=>/\.txt$/i.test(f.name));
-  if(!json) return syncErr("expense_data.json wasn't chosen. Choose it together with Total.txt — it holds your settings and Shift Pay.");
-  let o=null; try{ o=JSON.parse((await json.text()).replace(/^\uFEFF/,"")); }catch(_){}
-  if(!o||typeof o!=="object") return syncErr(json.name+" couldn't be read. It may not be fully downloaded from iCloud yet — open iCloud Drive › Shortcuts once with internet, then try again.");
-  if(!o.settings&&!o.shiftpay&&o.type!=="expense_data") return syncErr(json.name+" isn't Money data. Choose expense_data.json from iCloud Drive › Shortcuts.");
-  dirtyBefore=isDirty()||!lastSync(); lastTakeNewer=false; fileHadSP=false;
-  try{ await EXP.importFiles(files); }catch(err){ return syncErr("The files couldn't be loaded ("+(err&&err.message||"unknown error")+")."); }
+  if(!json&&!txt.length) return syncErr(files[0].name+" isn't one of the Money files. Choose Total.txt and expense_data.json from iCloud Drive › Shortcuts.");
+  if(json){ let o=null; try{ o=JSON.parse((await json.text()).replace(/^\uFEFF/,"")); }catch(_){}
+    if(!o||typeof o!=="object") return syncErr(json.name+" couldn't be read. It may not be fully downloaded from iCloud yet — open iCloud Drive › Shortcuts once with internet, then try again.");
+    if(!o.settings&&!o.shiftpay&&o.type!=="expense_data") return syncErr(json.name+" isn't Money data. Choose expense_data.json from iCloud Drive › Shortcuts."); }
+  if(!syncGot.json&&!syncGot.txt){ dirtyBefore=isDirty()||!lastSync(); lastTakeNewer=false; fileHadSP=false; }
+  try{ await EXP.importFiles(json?[json,...txt]:txt); }catch(err){ return syncErr("The file couldn't be loaded ("+(err&&err.message||"unknown error")+")."); }
+  if(json) syncGot.json=true; if(txt.length) syncGot.txt=true;
   calcCache.clear(); linkCache=null;
   if(SPSYNC.pending) return showChoice();
-  afterLoad(txt.length);
+  nextSyncStep();
 });
+let moreWant="";
+function nextSyncStep(){
+  if(!syncGot.json){ moreWant="json";
+    $s("moreMsg").innerHTML="Total.txt loaded ✓ New SMS are in.<br>Now choose <b>expense_data.json</b>, so the laptop's changes come in before saving."; $s("moreBtn").textContent="Choose expense_data.json"; $s("moreSkip").hidden=true; return step("more"); }
+  if(!syncGot.txt){ moreWant="txt";
+    $s("moreMsg").innerHTML="expense_data.json loaded ✓<br>Now choose <b>Total.txt</b> to bring in new SMS."; $s("moreBtn").textContent="Choose Total.txt"; $s("moreSkip").hidden=false; return step("more"); }
+  afterLoad(1);
+}
+$s("moreBtn").onclick=()=>{ $s("lockErr").hidden=true; $s("syncFile").click(); };
+$s("moreSkip").onclick=()=>afterLoad(0);
 const pl=(n,w)=>n+" "+w+(n===1?"":"s");
 const sumTxt=s=>"Basic "+(s.basic!=null?k3(+s.basic):"—")+"\nGroup "+s.group+"\n"+pl(s.leave,"leave day")+"\n"+pl(s.overtime,"overtime day")+"\n"+pl(s.exchanges,"exchange")+"\n"+pl(s.months,"month")+" planned";
 function showChoice(){ const p=SPSYNC.pending; $s("chFileTxt").textContent=sumTxt(p.file); $s("chHereTxt").textContent=sumTxt(p.here); step("choice"); }
-$s("chFile").onclick=()=>{ const n=SPSYNC.choose("file"); lastTakeNewer=lastTakeNewer||n; afterLoad(1); };
-$s("chHere").onclick=()=>{ const n=SPSYNC.choose("here"); lastTakeNewer=lastTakeNewer||n; afterLoad(1); };
+$s("chFile").onclick=()=>{ const n=SPSYNC.choose("file"); lastTakeNewer=lastTakeNewer||n; nextSyncStep(); };
+$s("chHere").onclick=()=>{ const n=SPSYNC.choose("here"); lastTakeNewer=lastTakeNewer||n; nextSyncStep(); };
 function afterLoad(hadTxt){
   const needSave=dirtyBefore||lastTakeNewer||!fileHadSP;
   if(!needSave) return finishSync("Synced ✓ Everything is up to date"+(hadTxt?"":" (no Total.txt chosen, so no new SMS)"));
@@ -3092,6 +3148,51 @@ $s("syncSave").onclick=async()=>{
 };
 $s("lockClose").onclick=closeSync;
 $s("dirtySync").onclick=()=>openSync();
+
+/* ---------- Privacy: hide every amount (Home, Salary, Expenses, Expenditure) ---------- */
+const PRIV=(function(){
+  const AMT=/[-−+]?(?:₹\s?)?\d[\d,]*\.\d{2,4}\b|₹\s?\d[\d,]*|\d[\d,]*\s?(?:KWD|KD|INR)\b/;
+  const AMT_G=new RegExp(AMT.source,"g"), NUMVAL=/^\s*[-−]?[\d,]*\.?\d+\s*$/;
+  const SKIP_IN="script,style,textarea,.amt,[data-noamt]", NOINPUT=/^(date|month|checkbox|radio|file|range|button|submit|color|time)$/i;
+  const opt=k=>{ try{ return localStorage.getItem("money_priv_"+k)==="1"; }catch(e){ return false; } };
+  const setOpt=(k,v)=>{ try{ localStorage.setItem("money_priv_"+k,v?"1":""); }catch(e){} };
+  const roots=()=>[document.body,PAYM&&PAYM.root,EXPM&&EXPM.root].filter(Boolean);
+  const hosts=()=>[PAYM&&PAYM.host,EXPM&&EXPM.host].filter(Boolean);
+  function mark(root){
+    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT), list=[]; let n;
+    while((n=w.nextNode())){ const p=n.parentElement; if(!p||p.closest(SKIP_IN)) continue; if(AMT.test(n.data)) list.push(n); }
+    for(const t of list){ const p=t.parentElement;
+      if(p instanceof SVGElement || (p.childNodes.length===1 && !/[A-Za-z]{4,}/.test(t.data.replace(AMT_G,"")))){ p.classList.add("amt"); continue; }
+      const f=document.createDocumentFragment(); let last=0; t.data.replace(AMT_G,(m,i)=>{ if(i>last) f.appendChild(document.createTextNode(t.data.slice(last,i)));
+        const sp=document.createElement("span"); sp.className="amt"; sp.textContent=m; f.appendChild(sp); last=i+m.length; return m; });
+      if(last<t.data.length) f.appendChild(document.createTextNode(t.data.slice(last))); t.replaceWith(f); }
+    root.querySelectorAll("input").forEach(i=>{ if(!NOINPUT.test(i.type)&&i.value&&NUMVAL.test(i.value)) i.classList.add("amt"); });
+  }
+  try{ const v=EXP&&EXP.el("ver"); if(v) v.setAttribute("data-noamt",""); }catch(e){}
+  const CSS=":host(.priv) .amt:not(.peek):not(:focus){filter:blur(.32em);-webkit-user-select:none;user-select:none} .amt{transition:filter .18s}";
+  [PAYM,EXPM].forEach(m=>{ if(m&&m.root){ const st=document.createElement("style"); st.textContent=CSS; m.root.appendChild(st); } });
+  let tm=null; const later=()=>{ clearTimeout(tm); tm=setTimeout(()=>{ if(P.on) roots().forEach(mark); },120); };
+  roots().forEach(r=>new MutationObserver(later).observe(r,{subtree:true,childList:true,characterData:true}));
+  document.addEventListener("input",later,true);
+  const P={ on:false, opt,
+    set(v,keep){ P.on=!!v; document.documentElement.classList.toggle("priv",P.on); hosts().forEach(h=>h.classList.toggle("priv",P.on));
+      const b=$s("privBtn"); if(b){ b.setAttribute("aria-pressed",P.on); b.setAttribute("aria-label",P.on?"Show amounts":"Hide amounts"); }
+      if(keep!==false) setOpt("on",P.on); if(P.on) roots().forEach(mark); } };
+  // tap a hidden amount: show it for 3 seconds (and don't open what's underneath)
+  window.addEventListener("click",e=>{ if(!P.on) return;
+    const el=e.composedPath().find(x=>x.classList&&x.classList.contains("amt")); if(!el) return;
+    if(el.tagName!=="INPUT"){ e.preventDefault(); e.stopImmediatePropagation(); }
+    if(el.classList.contains("peek")) return; el.classList.add("peek"); setTimeout(()=>el.classList.remove("peek"),3000); },true);
+  const leave=()=>{ if(opt("leave")) P.set(true); };
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") leave(); });
+  addEventListener("pagehide",leave);
+  P.set(opt("start")||opt("on"),!opt("start")?undefined:false);
+  if(opt("start")) setOpt("on",true);
+  return P;
+})();
+$s("privBtn").onclick=()=>{ PRIV.set(!PRIV.on); toast(PRIV.on?"Amounts hidden — tap one to peek":"Amounts shown"); };
+$s("more").addEventListener("change",e=>{ const c=e.target.closest("input[data-priv]"); if(!c) return;
+  const k=c.dataset.priv; if(k==="on") PRIV.set(c.checked); else { try{ localStorage.setItem("money_priv_"+k,c.checked?"1":""); }catch(_){} if(k==="start"&&c.checked) { PRIV.set(true); renderMore(); } } });
 
 /* ---------- start ---------- */
 let start="home"; try{ start=localStorage.getItem("money_tab")||"home"; }catch(e){}
